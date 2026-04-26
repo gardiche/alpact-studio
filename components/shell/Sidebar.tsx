@@ -10,7 +10,6 @@ import {
   Zap,
   TrendingUp,
   Target,
-  Plug,
   Bell,
   MessageSquare,
   LogOut,
