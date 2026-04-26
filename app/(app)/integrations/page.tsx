@@ -72,11 +72,7 @@ export default function IntegrationsPage() {
               <div className="flex items-start gap-4">
                 {/* Logo */}
                 <div className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 bg-white border-2 border-black">
-                  {integration.logo ? (
-                    <img src={integration.logo} alt={integration.name} className={`object-contain ${integration.provider === 'google' ? 'w-14 h-14' : ['pennylane', 'qonto', 'hubspot'].includes(integration.provider) ? 'w-9 h-9' : 'w-7 h-7'}`} />
-                  ) : (
-                    <span className="text-white font-sans font-bold text-lg">{integration.initial}</span>
-                  )}
+                  <img src={integration.logo} alt={integration.name} className={`object-contain ${integration.provider === 'google' ? 'w-14 h-14' : ['pennylane', 'qonto', 'hubspot'].includes(integration.provider) ? 'w-9 h-9' : 'w-7 h-7'}`} />
                 </div>
 
                 <div className="flex-1 min-w-0">
