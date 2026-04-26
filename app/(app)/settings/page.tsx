@@ -58,7 +58,7 @@ export default function SettingsPage() {
   function debouncedSave(data: typeof form) {
     setSaving(true);
     setTimeout(() => {
-      setUser({ ...user!, ...data, team_size: data.team_size ? parseInt(data.team_size) : null });
+      setUser({ ...user!, ...data, team_size: data.team_size ? parseInt(data.team_size) : null } as typeof user!);
       setSaving(false);
       setSaved(true);
       setTimeout(() => setSaved(false), 2000);
