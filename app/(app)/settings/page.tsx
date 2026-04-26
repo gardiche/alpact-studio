@@ -1,8 +1,7 @@
 "use client";
 
-import { useState, useCallback, useRef } from "react";
+import { useState, useRef } from "react";
 import { useAppStore } from "@/lib/store/useAppStore";
-import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/Button";
 import { User, Briefcase, Bell, Shield } from "lucide-react";
 import { useRouter } from "next/navigation";
@@ -44,7 +43,6 @@ export default function SettingsPage() {
   const [notifEmail, setNotifEmail] = useState(true);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const router = useRouter();
-  const supabase = createClient();
 
   const [form, setForm] = useState({
     first_name: user?.first_name || "",
@@ -57,25 +55,15 @@ export default function SettingsPage() {
     founded_at: user?.founded_at || "",
   });
 
-  const debouncedSave = useCallback(async (data: typeof form) => {
-    if (!user) return;
+  function debouncedSave(data: typeof form) {
     setSaving(true);
-    const update = {
-      ...data,
-      team_size: data.team_size ? parseInt(data.team_size) : null,
-      updated_at: new Date().toISOString(),
-    };
-    const { data: updated } = await supabase
-      .from("users")
-      .update(update)
-      .eq("id", user.id)
-      .select()
-      .single();
-    if (updated) setUser(updated);
-    setSaving(false);
-    setSaved(true);
-    setTimeout(() => setSaved(false), 2000);
-  }, [user, supabase, setUser]);
+    setTimeout(() => {
+      setUser({ ...user!, ...data, team_size: data.team_size ? parseInt(data.team_size) : null });
+      setSaving(false);
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2000);
+    }, 300);
+  }
 
   function handleChange(field: string, value: string) {
     const next = { ...form, [field]: value };
@@ -84,8 +72,7 @@ export default function SettingsPage() {
     debounceRef.current = setTimeout(() => debouncedSave(next), 500);
   }
 
-  async function handleSignOut() {
-    await supabase.auth.signOut();
+  function handleSignOut() {
     router.push("/login");
   }
 
