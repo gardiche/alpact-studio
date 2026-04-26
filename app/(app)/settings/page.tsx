@@ -58,7 +58,8 @@ export default function SettingsPage() {
   function debouncedSave(data: typeof form) {
     setSaving(true);
     setTimeout(() => {
-      setUser({ ...user!, ...data, team_size: data.team_size ? parseInt(data.team_size) : null } as typeof user!);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      setUser({ ...user!, ...data, team_size: data.team_size ? parseInt(data.team_size) : null } as any);
       setSaving(false);
       setSaved(true);
       setTimeout(() => setSaved(false), 2000);
