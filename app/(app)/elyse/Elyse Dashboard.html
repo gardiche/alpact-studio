@@ -1,0 +1,547 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=1440">
+<title>Elyse — Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script type="text/babel" src="tweaks-panel.jsx"></script>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; background: #F7F5F2; font-family: 'DM Sans', sans-serif; }
+  body { min-width: 1440px; }
+  #root { height: 100%; }
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+  }
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const { useState, useEffect, useRef } = React;
+
+const TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
+  "runway": 7.8,
+  "tresorerie": 84000,
+  "burn": 9800,
+  "mrr": 6200,
+  "showScenarios": true
+}/*EDITMODE-END*/;
+
+// Chart data: treasury declining over 12 months
+const chartData = [
+  { month: "Jan", value: 84000 },
+  { month: "Fév", value: 79500 },
+  { month: "Mar", value: 75200 },
+  { month: "Avr", value: 70100 },
+  { month: "Mai", value: 65800 },
+  { month: "Juin", value: 61000 },
+  { month: "Juil", value: 55900 },
+  { month: "Août", value: 49800 },
+  { month: "Sep", value: 42500 },
+  { month: "Oct", value: 33200 },
+  { month: "Nov", value: 21000 },
+  { month: "Déc", value: 7500 },
+];
+
+const fmt = (n) => n.toLocaleString('fr-FR') + ' €';
+
+function Avatar() {
+  return (
+    <div style={{
+      width: 36, height: 36, borderRadius: '50%',
+      background: '#1cb785', color: '#fff',
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+      fontFamily: 'DM Sans', fontWeight: 600, fontSize: 14, flexShrink: 0
+    }}>TG</div>
+  );
+}
+
+function Bell() {
+  return (
+    <div style={{ position: 'relative', cursor: 'pointer' }}>
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#888" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+        <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+      </svg>
+      <div style={{
+        position: 'absolute', top: -2, right: -2,
+        width: 8, height: 8, borderRadius: '50%',
+        background: '#ff4f3f', border: '1.5px solid #F7F5F2'
+      }}/>
+    </div>
+  );
+}
+
+function Topbar() {
+  return (
+    <nav style={{
+      height: 64, background: '#fff',
+      borderBottom: '1px solid #E4E0DB',
+      display: 'flex', alignItems: 'center',
+      justifyContent: 'space-between',
+      padding: '0 48px',
+      position: 'sticky', top: 0, zIndex: 100,
+      boxShadow: '0 1px 3px rgba(0,0,0,0.04)'
+    }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+        <img src="logo.png" alt="Elyse" style={{ height: 32, width: 'auto', display: 'block' }} />
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'rgba(28,183,133,0.08)', borderRadius: 999, padding: '3px 10px' }}>
+          <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#1cb785', animation: 'pulse 2s infinite' }}/>
+          <span style={{ fontFamily: 'DM Sans', fontSize: 11, fontWeight: 600, color: '#1cb785' }}>Live</span>
+        </div>
+        <span style={{ fontFamily: 'DM Sans', fontSize: 12, color: '#888' }}>Dernière sync : aujourd'hui à 09h14</span>
+      </div>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+        <Bell />
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <Avatar />
+          <span style={{ fontFamily: 'DM Sans', fontSize: 14, fontWeight: 500, color: '#111' }}>Thomas G.</span>
+        </div>
+      </div>
+    </nav>
+  );
+}
+
+function RunwayBar({ runway }) {
+  const pct = Math.min((runway / 18) * 100, 100);
+  return (
+    <div style={{ width: '100%' }}>
+      <div style={{
+        width: '100%', height: 10, borderRadius: 999,
+        background: '#E4E0DB', overflow: 'hidden', position: 'relative'
+      }}>
+        <div style={{
+          width: `${pct}%`, height: '100%',
+          background: '#1cb785', borderRadius: 999,
+          transition: 'width 0.6s ease'
+        }}/>
+      </div>
+      <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 6 }}>
+        <span style={{ fontFamily: 'DM Sans', fontSize: 12, color: '#888' }}>0</span>
+        <span style={{ fontFamily: 'DM Sans', fontSize: 12, color: '#888' }}>18 mois</span>
+      </div>
+    </div>
+  );
+}
+
+function Pill({ children }) {
+  return (
+    <div style={{
+      background: '#fff', border: '1px solid #E4E0DB',
+      borderRadius: 999, padding: '6px 14px',
+      fontFamily: 'DM Sans', fontSize: 13, fontWeight: 500, color: '#111',
+      whiteSpace: 'nowrap'
+    }}>{children}</div>
+  );
+}
+
+function HeroCard({ runway, tresorerie, burn }) {
+  return (
+    <div style={{
+      background: '#EEEDEB', borderRadius: 24,
+      padding: '36px 48px', textAlign: 'center',
+      boxShadow: '0 1px 3px rgba(0,0,0,0.06)',
+      marginBottom: 28
+    }}>
+      <div style={{ fontFamily: 'DM Sans', fontSize: 11, fontWeight: 600, letterSpacing: '0.12em', color: '#888', textTransform: 'uppercase', marginBottom: 10 }}>
+        Runway estimé
+      </div>
+      <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'center', gap: 8, marginBottom: 24 }}>
+        <span style={{ fontFamily: 'DM Serif Display', fontSize: 80, color: '#1cb785', lineHeight: 1, letterSpacing: '-2px' }}>
+          {runway.toLocaleString('fr-FR', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}
+        </span>
+        <span style={{ fontFamily: 'DM Serif Display', fontSize: 32, color: '#1cb785' }}>mois</span>
+      </div>
+      <div style={{ maxWidth: 520, margin: '0 auto 20px' }}>
+        <RunwayBar runway={runway} />
+      </div>
+      <div style={{ display: 'flex', justifyContent: 'center', gap: 10 }}>
+        <Pill>Trésorerie : {fmt(tresorerie)}</Pill>
+        <Pill>Burn mensuel : {fmt(burn)}</Pill>
+      </div>
+    </div>
+  );
+}
+
+function TrendUp({ color = '#1cb785' }) {
+  return (
+    <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+      <path d="M2 10L6 6L9 9L12 4" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+      <path d="M9 4H12V7" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+    </svg>
+  );
+}
+
+function WarnIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+      <path d="M7 1.5L12.5 11.5H1.5L7 1.5Z" stroke="#ff8f27" strokeWidth="1.6" strokeLinejoin="round"/>
+      <path d="M7 5.5V8" stroke="#ff8f27" strokeWidth="1.6" strokeLinecap="round"/>
+      <circle cx="7" cy="10" r="0.7" fill="#ff8f27"/>
+    </svg>
+  );
+}
+
+function MetricCard({ label, value, trend, trendType = 'up', warning = false }) {
+  return (
+    <div style={{
+      background: '#fff', borderRadius: 20,
+      padding: '22px 24px',
+      boxShadow: '0 1px 3px rgba(0,0,0,0.06)',
+      borderLeft: warning ? '3px solid #ff8f27' : '3px solid transparent',
+      transition: 'box-shadow 0.2s',
+      cursor: 'default',
+    }}
+    onMouseEnter={e => e.currentTarget.style.boxShadow = '0 4px 16px rgba(0,0,0,0.09)'}
+    onMouseLeave={e => e.currentTarget.style.boxShadow = '0 1px 3px rgba(0,0,0,0.06)'}
+    >
+      <div style={{ fontFamily: 'DM Sans', fontSize: 12, fontWeight: 500, color: '#888', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.08em' }}>{label}</div>
+      <div style={{ fontFamily: 'DM Serif Display', fontSize: 34, color: '#111', letterSpacing: '-0.5px', marginBottom: 8 }}>{value}</div>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+        {warning ? <WarnIcon /> : <TrendUp color="#1cb785" />}
+        <span style={{ fontFamily: 'DM Sans', fontSize: 12, color: warning ? '#ff8f27' : '#1cb785', fontWeight: 500 }}>{trend}</span>
+      </div>
+    </div>
+  );
+}
+
+function RunwayChart() {
+  const [tooltip, setTooltip] = useState(null);
+  const svgRef = useRef(null);
+
+  const W = 600, H = 240;
+  const padL = 44, padR = 20, padT = 10, padB = 28;
+  const innerW = W - padL - padR;
+  const innerH = H - padT - padB;
+  const maxVal = 100000;
+  const runwayIdx = 8; // Sep = index 8
+
+  const pts = chartData.map((d, i) => ({
+    x: padL + (i / (chartData.length - 1)) * innerW,
+    y: padT + innerH - (d.value / maxVal) * innerH,
+    value: d.value,
+    month: d.month,
+  }));
+
+  // Smooth cubic bezier path
+  const smooth = (points) => {
+    let d = `M ${points[0].x} ${points[0].y}`;
+    for (let i = 1; i < points.length; i++) {
+      const prev = points[i - 1];
+      const curr = points[i];
+      const cpx = (prev.x + curr.x) / 2;
+      d += ` C ${cpx} ${prev.y} ${cpx} ${curr.y} ${curr.x} ${curr.y}`;
+    }
+    return d;
+  };
+
+  const linePath = smooth(pts);
+  const areaPath = linePath + ` L ${pts[pts.length-1].x} ${padT + innerH} L ${pts[0].x} ${padT + innerH} Z`;
+
+  const yTicks = [0, 25000, 50000, 75000, 100000];
+  const refX = pts[runwayIdx].x;
+
+  const handleMouseMove = (e) => {
+    if (!svgRef.current) return;
+    const rect = svgRef.current.getBoundingClientRect();
+    const mouseX = (e.clientX - rect.left) * (W / rect.width);
+    // find closest point
+    let closest = pts[0], minDist = Infinity;
+    pts.forEach(p => {
+      const d = Math.abs(p.x - mouseX);
+      if (d < minDist) { minDist = d; closest = p; }
+    });
+    setTooltip({ x: closest.x, y: closest.y, value: closest.value, month: closest.month });
+  };
+
+  return (
+    <div style={{
+      background: '#fff', borderRadius: 20,
+      padding: '28px 28px 18px',
+      boxShadow: '0 1px 3px rgba(0,0,0,0.06)',
+      height: '100%'
+    }}>
+      <div style={{ fontFamily: 'DM Sans', fontSize: 15, fontWeight: 500, color: '#111', marginBottom: 20 }}>
+        Évolution de la trésorerie
+      </div>
+      <div style={{ position: 'relative' }}>
+        <svg
+          ref={svgRef}
+          viewBox={`0 0 ${W} ${H}`}
+          style={{ width: '100%', height: 'auto', display: 'block', cursor: 'crosshair' }}
+          onMouseMove={handleMouseMove}
+          onMouseLeave={() => setTooltip(null)}
+        >
+          <defs>
+            <linearGradient id="greenFill" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor="#1cb785" stopOpacity={0.10}/>
+              <stop offset="100%" stopColor="#1cb785" stopOpacity={0.01}/>
+            </linearGradient>
+          </defs>
+
+          {/* Grid lines */}
+          {yTicks.map(v => {
+            const y = padT + innerH - (v / maxVal) * innerH;
+            return (
+              <g key={v}>
+                <line x1={padL} y1={y} x2={padL + innerW} y2={y} stroke="#F0EDE9" strokeWidth={1} strokeDasharray="4 4"/>
+                <text x={padL - 6} y={y + 4} textAnchor="end" fontSize={11} fill="#aaa" fontFamily="DM Sans">
+                  {v === 0 ? '0' : `${v/1000}k`}
+                </text>
+              </g>
+            );
+          })}
+
+          {/* X axis labels */}
+          {pts.map((p, i) => (
+            <text key={i} x={p.x} y={H - 4} textAnchor="middle" fontSize={11} fill="#aaa" fontFamily="DM Sans">
+              {chartData[i].month}
+            </text>
+          ))}
+
+          {/* Reference line: Runway */}
+          <line x1={refX} y1={padT} x2={refX} y2={padT + innerH} stroke="#ff4f3f" strokeWidth={1.5} strokeDasharray="5 4"/>
+          <text x={refX + 5} y={padT + 14} fontSize={10} fill="#ff4f3f" fontFamily="DM Sans">Runway estimé</text>
+
+          {/* Area fill */}
+          <path d={areaPath} fill="url(#greenFill)"/>
+
+          {/* Line */}
+          <path d={linePath} fill="none" stroke="#1cb785" strokeWidth={2} strokeLinejoin="round"/>
+
+          {/* Tooltip dot */}
+          {tooltip && (
+            <circle cx={tooltip.x} cy={tooltip.y} r={5} fill="#1cb785" stroke="#fff" strokeWidth={2}/>
+          )}
+        </svg>
+
+        {/* Tooltip box */}
+        {tooltip && (
+          <div style={{
+            position: 'absolute',
+            left: `calc(${(tooltip.x / W) * 100}% + 8px)`,
+            top: `calc(${(tooltip.y / H) * 100}% - 20px)`,
+            background: '#fff', border: '1px solid #E4E0DB', borderRadius: 10,
+            padding: '8px 12px', boxShadow: '0 4px 16px rgba(0,0,0,0.1)',
+            pointerEvents: 'none', whiteSpace: 'nowrap', zIndex: 10
+          }}>
+            <div style={{ fontFamily: 'DM Sans', fontSize: 11, color: '#888', marginBottom: 2 }}>{tooltip.month}</div>
+            <div style={{ fontFamily: 'DM Serif Display', fontSize: 15, color: '#111' }}>
+              {tooltip.value.toLocaleString('fr-FR')} €
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function AlertBadge({ type = 'warning' }) {
+  return (
+    <div style={{
+      background: type === 'warning' ? 'rgba(255,143,39,0.1)' : 'rgba(255,79,63,0.1)',
+      color: type === 'warning' ? '#ff8f27' : '#ff4f3f',
+      borderRadius: 999, padding: '3px 10px',
+      fontFamily: 'DM Sans', fontSize: 11, fontWeight: 600,
+      letterSpacing: '0.06em', whiteSpace: 'nowrap'
+    }}>
+      {type === 'warning' ? 'Warning' : 'Critique'}
+    </div>
+  );
+}
+
+function AlertItem({ icon, text, date, borderColor, action, type = 'warning' }) {
+  return (
+    <div style={{
+      borderLeft: `3px solid ${borderColor}`,
+      paddingLeft: 14,
+      display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12
+    }}>
+      <div style={{ flex: 1 }}>
+        <div style={{ fontFamily: 'DM Sans', fontSize: 13, fontWeight: 500, color: '#111', marginBottom: 3 }}>
+          {icon} {text}
+        </div>
+        <div style={{ fontFamily: 'DM Sans', fontSize: 12, color: '#888', marginBottom: action ? 6 : 0 }}>{date}</div>
+        {action && (
+          <div style={{
+            fontFamily: 'DM Sans', fontSize: 12, color: borderColor,
+            display: 'flex', alignItems: 'center', gap: 4
+          }}>
+            <span>→</span>
+            <span>{action}</span>
+          </div>
+        )}
+      </div>
+      <AlertBadge type={type} />
+    </div>
+  );
+}
+
+function AlertsCard() {
+  return (
+    <div style={{
+      background: '#fff', borderRadius: 20,
+      padding: '22px 24px',
+      boxShadow: '0 1px 3px rgba(0,0,0,0.06)',
+    }}>
+      <div style={{ fontFamily: 'DM Sans', fontSize: 13, fontWeight: 600, color: '#111', marginBottom: 18, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+        Alertes actives
+      </div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
+        <AlertItem
+          icon="⚠️"
+          text="Burn en hausse de 18% ce mois"
+          date="Aujourd'hui"
+          borderColor="#ff8f27"
+          action="Identifier les postes en hausse"
+          type="warning"
+        />
+        <div style={{ height: 1, background: '#F0EDE9' }}/>
+        <AlertItem
+          icon="📉"
+          text="Runway sous le seuil recommandé (9 mois)"
+          date="Aujourd'hui"
+          borderColor="#ff4f3f"
+          action="Revoir le plan de dépenses Q2"
+          type="critique"
+        />
+      </div>
+    </div>
+  );
+}
+
+function ScenarioRow({ label, result, last }) {
+  return (
+    <>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 0' }}>
+        <span style={{ fontFamily: 'DM Sans', fontSize: 13, color: '#555', flex: 1 }}>{label}</span>
+        <span style={{ fontFamily: 'DM Sans', fontSize: 16, color: '#888', margin: '0 12px' }}>→</span>
+        <span style={{ fontFamily: 'DM Serif Display', fontSize: 20, color: '#1cb785', letterSpacing: '-0.3px' }}>{result}</span>
+      </div>
+      {!last && <div style={{ height: 1, background: 'rgba(0,0,0,0.06)' }}/>}
+    </>
+  );
+}
+
+function NextDeadlineCard() {
+  const items = [
+    { label: 'Salaires', amount: '8 500 €', days: 12, color: '#ff8f27' },
+    { label: 'Loyer bureaux', amount: '1 200 €', days: 18, color: '#1cb785' },
+    { label: 'Abonnements SaaS', amount: '340 €', days: 24, color: '#888' },
+  ];
+  return (
+    <div style={{
+      background: '#fff', borderRadius: 20,
+      padding: '22px 24px',
+      boxShadow: '0 1px 3px rgba(0,0,0,0.06)',
+    }}>
+      <div style={{ fontFamily: 'DM Sans', fontSize: 13, fontWeight: 600, color: '#111', marginBottom: 18, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+        Prochaines échéances
+      </div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
+        {items.map((item, i) => (
+          <div key={i}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 0' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <div style={{ width: 8, height: 8, borderRadius: '50%', background: item.color, flexShrink: 0 }} />
+                <span style={{ fontFamily: 'DM Sans', fontSize: 13, color: '#111' }}>{item.label}</span>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                <span style={{ fontFamily: 'DM Serif Display', fontSize: 16, color: '#111' }}>{item.amount}</span>
+                <span style={{
+                  fontFamily: 'DM Sans', fontSize: 11, color: item.days <= 14 ? '#ff8f27' : '#888',
+                  background: item.days <= 14 ? 'rgba(255,143,39,0.08)' : '#F7F5F2',
+                  borderRadius: 999, padding: '2px 8px', whiteSpace: 'nowrap'
+                }}>dans {item.days}j</span>
+              </div>
+            </div>
+            {i < items.length - 1 && <div style={{ height: 1, background: '#F0EDE9' }} />}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function ScenariosCard({ show }) {
+  if (!show) return null;
+  return (
+    <div style={{
+      background: '#EEEDEB', borderRadius: 20,
+      padding: '22px 24px',
+      boxShadow: '0 1px 3px rgba(0,0,0,0.06)',
+    }}>
+      <div style={{ fontFamily: 'DM Serif Display', fontSize: 20, color: '#111', marginBottom: 2 }}>Et si…</div>
+      <ScenarioRow label="Réduction burn −20%" result="+2,1 mois" />
+      <ScenarioRow label="Nouveau client MRR +2k€" result="+1,4 mois" />
+      <ScenarioRow label="Levée de fonds +50k€" result="+5,1 mois" last />
+    </div>
+  );
+}
+
+function App() {
+  const [tweaks, setTweak] = useTweaks(TWEAK_DEFAULTS);
+
+  return (
+    <div style={{ minHeight: '100vh', background: '#F7F5F2' }}>
+      <Topbar />
+      <main style={{ maxWidth: 1360, margin: '0 auto', padding: '36px 40px 60px' }}>
+        {/* Hero */}
+        <HeroCard runway={tweaks.runway} tresorerie={tweaks.tresorerie} burn={tweaks.burn} />
+
+        {/* 3-column layout */}
+        <div style={{ display: 'grid', gridTemplateColumns: '260px 1fr 300px', gap: 20, alignItems: 'start' }}>
+
+          {/* Left: metric cards */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+            <MetricCard
+              label="Trésorerie disponible"
+              value={fmt(tweaks.tresorerie)}
+              trend="+2% ce mois"
+            />
+            <MetricCard
+              label="Cash burn mensuel"
+              value={fmt(tweaks.burn)}
+              trend="+18% vs mois dernier"
+              warning
+            />
+            <MetricCard
+              label="MRR"
+              value={fmt(tweaks.mrr)}
+              trend="+12% ce mois"
+            />
+          </div>
+
+          {/* Center: chart */}
+          <RunwayChart />
+
+          {/* Right: alerts + deadlines + scenarios */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+            <AlertsCard />
+            <NextDeadlineCard />
+            <ScenariosCard show={tweaks.showScenarios} />
+          </div>
+        </div>
+      </main>
+
+      <TweaksPanel>
+        <TweakSlider label="Runway (mois)" tweakKey="runway" value={tweaks.runway} min={1} max={18} step={0.1} onChange={v => setTweak('runway', v)} />
+        <TweakSlider label="Trésorerie (€)" tweakKey="tresorerie" value={tweaks.tresorerie} min={10000} max={300000} step={1000} onChange={v => setTweak('tresorerie', v)} />
+        <TweakSlider label="Burn mensuel (€)" tweakKey="burn" value={tweaks.burn} min={2000} max={50000} step={200} onChange={v => setTweak('burn', v)} />
+        <TweakSlider label="MRR (€)" tweakKey="mrr" value={tweaks.mrr} min={0} max={50000} step={200} onChange={v => setTweak('mrr', v)} />
+        <TweakToggle label="Afficher scénarios" tweakKey="showScenarios" value={tweaks.showScenarios} onChange={v => setTweak('showScenarios', v)} />
+      </TweaksPanel>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+</body>
+</html>

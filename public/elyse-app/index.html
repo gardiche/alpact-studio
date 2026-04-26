@@ -1,0 +1,1185 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Elyse — Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" crossorigin="anonymous"></script>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; background: #F7F5F2; font-family: 'DM Sans', sans-serif; color: #111; -webkit-font-smoothing: antialiased; }
+  body { min-width: 0; }
+  #root { height: 100%; }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+  }
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(12px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  .fade-up { animation: fadeUp 0.4s ease both; }
+  .fade-up-1 { animation-delay: 0.05s; }
+  .fade-up-2 { animation-delay: 0.12s; }
+  .fade-up-3 { animation-delay: 0.19s; }
+
+  /* Nav shared */
+  .elyse-nav {
+    height: 64px; background: #fff; border-bottom: 1px solid #E4E0DB;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 48px; position: sticky; top: 0; z-index: 100;
+    box-shadow: 0 1px 0 #E4E0DB;
+  }
+  /* Landing cards */
+  .landing-card {
+    background: #fff; border-radius: 24px; padding: 40px 36px;
+    border: 1.5px solid #E4E0DB;
+    cursor: pointer; transition: border-color 0.16s, box-shadow 0.16s, transform 0.16s;
+    position: relative; overflow: hidden;
+  }
+  .landing-card:hover { box-shadow: 0 12px 40px rgba(0,0,0,0.10); transform: translateY(-3px); }
+  .landing-card-green:hover  { border-color: #1cb785; }
+  .landing-card-blue:hover   { border-color: #2D5BE3; }
+
+  /* Action buttons */
+  .action-btn {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 500;
+    border-radius: 10px; padding: 8px 16px;
+    cursor: default; user-select: none; transition: background 0.15s, border-color 0.15s;
+    border: 1px solid transparent;
+  }
+  .action-btn-generer    { color: #fff;  background: #111; border-color: #111; }
+  .action-btn-editer     { color: #111;  background: #fff; border-color: #E4E0DB; }
+  .action-btn-challenger { color: #fff;  background: #111; border-color: #111; }
+  .action-btn-generer:hover    { background: #333; border-color: #333; cursor: pointer; }
+  .action-btn-editer:hover     { background: #F7F5F2; border-color: #ccc; cursor: pointer; }
+  .action-btn-challenger:hover { background: #333; border-color: #333; cursor: pointer; }
+
+  /* Livrable cards */
+  .livrable-card {
+    background: #fff; border-radius: 20px; padding: 32px 36px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    border: 1px solid #E4E0DB;
+  }
+
+  /* Metric cards */
+  .metric-card {
+    background: #fff; border-radius: 20px; padding: 24px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    transition: box-shadow 0.2s;
+    cursor: default;
+  }
+  .metric-card:hover { box-shadow: 0 6px 24px rgba(0,0,0,0.08); }
+  .metric-card-warn { border-left: 3px solid #ff8f27; }
+  .metric-card-normal { border-left: 3px solid transparent; }
+
+  /* Tweaks panel */
+  .twk-panel{position:fixed;right:16px;bottom:16px;z-index:2147483646;width:280px;
+    max-height:calc(100vh - 32px);display:flex;flex-direction:column;
+    background:rgba(250,249,247,.78);color:#29261b;
+    -webkit-backdrop-filter:blur(24px) saturate(160%);backdrop-filter:blur(24px) saturate(160%);
+    border:.5px solid rgba(255,255,255,.6);border-radius:14px;
+    box-shadow:0 1px 0 rgba(255,255,255,.5) inset,0 12px 40px rgba(0,0,0,.18);
+    font:11.5px/1.4 ui-sans-serif,system-ui,-apple-system,sans-serif;overflow:hidden}
+  .twk-hd{display:flex;align-items:center;justify-content:space-between;
+    padding:10px 8px 10px 14px;cursor:move;user-select:none}
+  .twk-hd b{font-size:12px;font-weight:600;letter-spacing:.01em}
+  .twk-x{appearance:none;border:0;background:transparent;color:rgba(41,38,27,.55);
+    width:22px;height:22px;border-radius:6px;cursor:default;font-size:13px;line-height:1}
+  .twk-x:hover{background:rgba(0,0,0,.06);color:#29261b}
+  .twk-body{padding:2px 14px 14px;display:flex;flex-direction:column;gap:10px;
+    overflow-y:auto;overflow-x:hidden;min-height:0;
+    scrollbar-width:thin;scrollbar-color:rgba(0,0,0,.15) transparent}
+  .twk-row{display:flex;flex-direction:column;gap:5px}
+  .twk-row-h{flex-direction:row;align-items:center;justify-content:space-between;gap:10px}
+  .twk-lbl{display:flex;justify-content:space-between;align-items:baseline;color:rgba(41,38,27,.72)}
+  .twk-lbl>span:first-child{font-weight:500}
+  .twk-val{color:rgba(41,38,27,.5);font-variant-numeric:tabular-nums}
+  .twk-slider{appearance:none;-webkit-appearance:none;width:100%;height:4px;margin:6px 0;
+    border-radius:999px;background:rgba(0,0,0,.12);outline:none}
+  .twk-slider::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;
+    width:14px;height:14px;border-radius:50%;background:#fff;
+    border:.5px solid rgba(0,0,0,.12);box-shadow:0 1px 3px rgba(0,0,0,.2);cursor:default}
+  .twk-toggle{position:relative;width:32px;height:18px;border:0;border-radius:999px;
+    background:rgba(0,0,0,.15);transition:background .15s;cursor:default;padding:0}
+  .twk-toggle[data-on="1"]{background:#34c759}
+  .twk-toggle i{position:absolute;top:2px;left:2px;width:14px;height:14px;border-radius:50%;
+    background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.25);transition:transform .15s}
+  .twk-toggle[data-on="1"] i{transform:translateX(14px)}
+
+  /* ── Responsive helpers ── */
+  .elyse-nav { padding: 0 48px; }
+  .elyse-main { max-width: 1360px; margin: 0 auto; padding: 32px 40px 64px; }
+  .elyse-hero { padding: 40px 56px; }
+  .elyse-grid-3 { display: grid; grid-template-columns: 256px 1fr 296px; gap: 16px; align-items: start; }
+  .elyse-landing-main { max-width: 820px; margin: 0 auto; padding: 88px 40px 80px; }
+  .elyse-landing-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  .elyse-livrables-main { max-width: 800px; margin: 0 auto; padding: 64px 40px 80px; }
+  .elyse-welcome-box { width: 400px; text-align: center; }
+  .elyse-welcome-inputs { display: flex; gap: 12px; margin-bottom: 12px; }
+
+  @media (max-width: 1100px) {
+    .elyse-grid-3 { grid-template-columns: 200px 1fr 260px !important; }
+  }
+
+  .elyse-mobile-back { display: none; }
+
+  @media (max-width: 900px) {
+    .elyse-nav { padding: 0 20px !important; }
+    .elyse-nav-sync { display: none !important; }
+    .elyse-nav-breadcrumb { display: none !important; }
+    .elyse-mobile-back { display: flex !important; }
+    .elyse-main { padding: 20px 16px 48px !important; }
+    .elyse-hero { padding: 28px 24px !important; }
+    .elyse-hero-number { font-size: 60px !important; }
+    .elyse-grid-3 { grid-template-columns: 1fr !important; }
+    .elyse-landing-main { padding: 48px 20px 60px !important; }
+    .elyse-landing-grid { grid-template-columns: 1fr !important; }
+    .elyse-landing-title { font-size: 36px !important; }
+    .elyse-livrables-main { padding: 40px 20px 60px !important; }
+    .elyse-welcome-box { width: 90vw !important; max-width: 400px; }
+    .elyse-welcome-inputs { flex-direction: column !important; }
+    .elyse-demodemo { display: none !important; }
+    .elyse-nav-user-name { display: none !important; }
+    .twk-panel { display: none !important; }
+  }
+
+  @media (max-width: 600px) {
+    .elyse-hero-pills { flex-direction: column !important; align-items: center !important; gap: 8px !important; }
+    .elyse-donut-section { flex-direction: column !important; gap: 16px !important; }
+    .elyse-donut-divider { display: none !important; }
+    .livrable-card { padding: 20px 18px !important; }
+    .landing-card { padding: 28px 22px !important; }
+  }
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const { useState, useEffect, useRef, useCallback } = React;
+
+/* ── Tweaks ── */
+function useTweaks(defaults) {
+  const [values, setValues] = React.useState(defaults);
+  const setTweak = React.useCallback((key, val) => {
+    setValues((prev) => ({ ...prev, [key]: val }));
+  }, []);
+  return [values, setTweak];
+}
+
+function TweaksPanel({ title = 'Tweaks', children }) {
+  const [open, setOpen] = React.useState(false);
+  const dragRef = React.useRef(null);
+  const offsetRef = React.useRef({ x: 16, y: 16 });
+  const PAD = 16;
+
+  const clampToViewport = React.useCallback(() => {
+    const panel = dragRef.current;
+    if (!panel) return;
+    const w = panel.offsetWidth, h = panel.offsetHeight;
+    const maxRight = Math.max(PAD, window.innerWidth - w - PAD);
+    const maxBottom = Math.max(PAD, window.innerHeight - h - PAD);
+    offsetRef.current = {
+      x: Math.min(maxRight, Math.max(PAD, offsetRef.current.x)),
+      y: Math.min(maxBottom, Math.max(PAD, offsetRef.current.y)),
+    };
+    panel.style.right = offsetRef.current.x + 'px';
+    panel.style.bottom = offsetRef.current.y + 'px';
+  }, []);
+
+  React.useEffect(() => {
+    if (!open) return;
+    clampToViewport();
+    const ro = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(clampToViewport) : null;
+    if (ro) { ro.observe(document.documentElement); return () => ro.disconnect(); }
+    window.addEventListener('resize', clampToViewport);
+    return () => window.removeEventListener('resize', clampToViewport);
+  }, [open, clampToViewport]);
+
+  React.useEffect(() => {
+    const onMsg = (e) => {
+      const t = e?.data?.type;
+      if (t === '__activate_edit_mode') setOpen(true);
+      else if (t === '__deactivate_edit_mode') setOpen(false);
+    };
+    window.addEventListener('message', onMsg);
+    window.parent.postMessage({ type: '__edit_mode_available' }, '*');
+    return () => window.removeEventListener('message', onMsg);
+  }, []);
+
+  const dismiss = () => {
+    setOpen(false);
+    window.parent.postMessage({ type: '__edit_mode_dismissed' }, '*');
+  };
+
+  const onDragStart = (e) => {
+    const panel = dragRef.current;
+    if (!panel) return;
+    const r = panel.getBoundingClientRect();
+    const sx = e.clientX, sy = e.clientY;
+    const startRight = window.innerWidth - r.right;
+    const startBottom = window.innerHeight - r.bottom;
+    const move = (ev) => {
+      offsetRef.current = { x: startRight - (ev.clientX - sx), y: startBottom - (ev.clientY - sy) };
+      clampToViewport();
+    };
+    const up = () => { window.removeEventListener('mousemove', move); window.removeEventListener('mouseup', up); };
+    window.addEventListener('mousemove', move);
+    window.addEventListener('mouseup', up);
+  };
+
+  if (!open) return null;
+  return (
+    <div ref={dragRef} className="twk-panel" style={{ right: offsetRef.current.x, bottom: offsetRef.current.y }}>
+      <div className="twk-hd" onMouseDown={onDragStart}>
+        <b>{title}</b>
+        <button className="twk-x" onMouseDown={(e) => e.stopPropagation()} onClick={dismiss}>✕</button>
+      </div>
+      <div className="twk-body">{children}</div>
+    </div>
+  );
+}
+
+function TweakSlider({ label, value, min = 0, max = 100, step = 1, unit = '', onChange }) {
+  return (
+    <div className="twk-row">
+      <div className="twk-lbl"><span>{label}</span><span className="twk-val">{value}{unit}</span></div>
+      <input type="range" className="twk-slider" min={min} max={max} step={step}
+             value={value} onChange={(e) => onChange(Number(e.target.value))} />
+    </div>
+  );
+}
+
+function TweakToggle({ label, value, onChange }) {
+  return (
+    <div className="twk-row twk-row-h">
+      <div className="twk-lbl"><span>{label}</span></div>
+      <button type="button" className="twk-toggle" data-on={value ? '1' : '0'}
+              role="switch" aria-checked={!!value} onClick={() => onChange(!value)}><i /></button>
+    </div>
+  );
+}
+
+/* ── App ── */
+const TWEAK_DEFAULTS = {
+  runway: 7.8,
+  tresorerie: 84000,
+  burn: 9800,
+  mrr: 13100,
+  showScenarios: true
+};
+
+const chartData = [
+  { month: "Jan", value: 84000 },
+  { month: "Fév", value: 79500 },
+  { month: "Mar", value: 75200 },
+  { month: "Avr", value: 70100 },
+  { month: "Mai", value: 65800 },
+  { month: "Juin", value: 61000 },
+  { month: "Juil", value: 55900 },
+  { month: "Août", value: 49800 },
+  { month: "Sep", value: 42500 },
+  { month: "Oct", value: 33200 },
+  { month: "Nov", value: 21000 },
+  { month: "Déc", value: 7500 },
+];
+
+const fmt = (n) => n.toLocaleString('fr-FR') + ' €';
+
+function Avatar({ initials = 'TB' }) {
+  return (
+    <div style={{
+      width: 36, height: 36, borderRadius: '50%',
+      background: '#1cb785', color: '#fff',
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+      fontFamily: 'DM Sans', fontWeight: 600, fontSize: 14, flexShrink: 0
+    }}>{initials}</div>
+  );
+}
+
+function BellIcon() {
+  return (
+    <div style={{ position: 'relative', cursor: 'pointer' }}>
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#888" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+        <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+      </svg>
+      <div style={{
+        position: 'absolute', top: -2, right: -2,
+        width: 8, height: 8, borderRadius: '50%',
+        background: '#ff4f3f', border: '1.5px solid #F7F5F2'
+      }}/>
+    </div>
+  );
+}
+
+function Topbar() {
+  return (
+    <nav style={{
+      height: 64, background: '#fff',
+      borderBottom: '1px solid #E4E0DB',
+      display: 'flex', alignItems: 'center',
+      justifyContent: 'space-between',
+      padding: '0 48px',
+      position: 'sticky', top: 0, zIndex: 100,
+      boxShadow: '0 1px 3px rgba(0,0,0,0.04)'
+    }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+        <img src="logo.png" alt="Elyse" style={{ height: 44, width: 'auto', display: 'block' }} />
+        <span style={{ fontFamily: 'DM Sans', fontSize: 12, color: '#888' }}>Dernière sync : aujourd'hui à 09h14</span>
+      </div>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+        <BellIcon />
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <Avatar />
+          <span style={{ fontFamily: 'DM Sans', fontSize: 14, fontWeight: 500, color: '#111' }}>Thomas B.</span>
+        </div>
+      </div>
+    </nav>
+  );
+}
+
+function RunwayBar({ runway }) {
+  const pct = Math.min((runway / 18) * 100, 100);
+  return (
+    <div style={{ width: '100%' }}>
+      <div style={{ width: '100%', height: 10, borderRadius: 999, background: '#E4E0DB', overflow: 'hidden' }}>
+        <div style={{ width: `${pct}%`, height: '100%', background: '#1cb785', borderRadius: 999, transition: 'width 0.6s ease' }}/>
+      </div>
+      <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 6 }}>
+        <span style={{ fontFamily: 'DM Sans', fontSize: 12, color: '#888' }}>0</span>
+        <span style={{ fontFamily: 'DM Sans', fontSize: 12, color: '#888' }}>18 mois</span>
+      </div>
+    </div>
+  );
+}
+
+function Pill({ children }) {
+  return (
+    <div style={{
+      background: '#fff', border: '1px solid #E4E0DB',
+      borderRadius: 999, padding: '6px 16px',
+      fontSize: 13, fontWeight: 500, color: '#555', whiteSpace: 'nowrap',
+      boxShadow: '0 1px 2px rgba(0,0,0,0.04)',
+    }}>{children}</div>
+  );
+}
+
+function HeroCard({ runway, tresorerie, burn }) {
+  const urgency = runway < 4 ? '#ff4f3f' : runway < 6 ? '#ff8f27' : '#1cb785';
+  return (
+    <div style={{
+      background: '#111111', borderRadius: 24,
+      padding: '40px 56px', textAlign: 'center',
+      marginBottom: 24, position: 'relative', overflow: 'hidden',
+    }}>
+      <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.14em', color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase', marginBottom: 16 }}>
+        Runway estimé
+      </div>
+      <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'center', gap: 10, marginBottom: 28 }}>
+        <span className="elyse-hero-number" style={{ fontFamily: 'DM Serif Display', fontSize: 88, color: urgency, lineHeight: 1, letterSpacing: '-3px' }}>
+          {runway.toLocaleString('fr-FR', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}
+        </span>
+        <span style={{ fontFamily: 'DM Serif Display', fontSize: 36, color: urgency, opacity: 0.7 }}>mois</span>
+      </div>
+      <div style={{ maxWidth: 480, margin: '0 auto 24px' }}>
+        <RunwayBar runway={runway} />
+      </div>
+      <div className="elyse-hero-pills" style={{ display: 'flex', justifyContent: 'center', gap: 8 }}>
+        <Pill>Trésorerie : {fmt(tresorerie)}</Pill>
+        <Pill>Burn mensuel : {fmt(burn)}</Pill>
+      </div>
+    </div>
+  );
+}
+
+function TrendUp({ color = '#1cb785' }) {
+  return (
+    <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+      <path d="M2 10L6 6L9 9L12 4" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+      <path d="M9 4H12V7" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+    </svg>
+  );
+}
+
+function WarnIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+      <path d="M7 1.5L12.5 11.5H1.5L7 1.5Z" stroke="#ff8f27" strokeWidth="1.6" strokeLinejoin="round"/>
+      <path d="M7 5.5V8" stroke="#ff8f27" strokeWidth="1.6" strokeLinecap="round"/>
+      <circle cx="7" cy="10" r="0.7" fill="#ff8f27"/>
+    </svg>
+  );
+}
+
+function MetricCard({ label, value, trend, warning = false }) {
+  return (
+    <div className={`metric-card ${warning ? 'metric-card-warn' : 'metric-card-normal'}`}>
+      <div style={{ fontSize: 11, fontWeight: 600, color: '#999', marginBottom: 12, textTransform: 'uppercase', letterSpacing: '0.10em' }}>{label}</div>
+      <div style={{ fontFamily: 'DM Serif Display', fontSize: 32, color: '#111', letterSpacing: '-0.5px', marginBottom: 10, lineHeight: 1 }}>{value}</div>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+        {warning ? <WarnIcon /> : <TrendUp color="#1cb785" />}
+        <span style={{ fontSize: 12, color: warning ? '#ff8f27' : '#1cb785', fontWeight: 500 }}>{trend}</span>
+      </div>
+    </div>
+  );
+}
+
+function RunwayChart() {
+  const [tooltip, setTooltip] = useState(null);
+  const svgRef = useRef(null);
+  const W = 600, H = 240;
+  const padL = 44, padR = 20, padT = 10, padB = 28;
+  const innerW = W - padL - padR;
+  const innerH = H - padT - padB;
+  const maxVal = 100000;
+  const runwayIdx = 8;
+
+  const pts = chartData.map((d, i) => ({
+    x: padL + (i / (chartData.length - 1)) * innerW,
+    y: padT + innerH - (d.value / maxVal) * innerH,
+    value: d.value, month: d.month,
+  }));
+
+  const smooth = (points) => {
+    let d = `M ${points[0].x} ${points[0].y}`;
+    for (let i = 1; i < points.length; i++) {
+      const prev = points[i - 1], curr = points[i];
+      const cpx = (prev.x + curr.x) / 2;
+      d += ` C ${cpx} ${prev.y} ${cpx} ${curr.y} ${curr.x} ${curr.y}`;
+    }
+    return d;
+  };
+
+  const linePath = smooth(pts);
+  const areaPath = linePath + ` L ${pts[pts.length-1].x} ${padT + innerH} L ${pts[0].x} ${padT + innerH} Z`;
+  const yTicks = [0, 25000, 50000, 75000, 100000];
+  const refX = pts[runwayIdx].x;
+
+  const handleMouseMove = (e) => {
+    if (!svgRef.current) return;
+    const rect = svgRef.current.getBoundingClientRect();
+    const mouseX = (e.clientX - rect.left) * (W / rect.width);
+    let closest = pts[0], minDist = Infinity;
+    pts.forEach(p => { const d = Math.abs(p.x - mouseX); if (d < minDist) { minDist = d; closest = p; } });
+    setTooltip({ x: closest.x, y: closest.y, value: closest.value, month: closest.month });
+  };
+
+  return (
+    <div style={{ background: '#fff', borderRadius: 20, padding: '28px 28px 20px', boxShadow: '0 1px 3px rgba(0,0,0,0.05)', border: '1px solid #E4E0DB', height: '100%' }}>
+      <div style={{ fontFamily: 'DM Sans', fontSize: 15, fontWeight: 500, color: '#111', marginBottom: 20 }}>
+        Évolution de la trésorerie
+      </div>
+      <div style={{ position: 'relative' }}>
+        <svg ref={svgRef} viewBox={`0 0 ${W} ${H}`}
+          style={{ width: '100%', height: 'auto', display: 'block', cursor: 'crosshair' }}
+          onMouseMove={handleMouseMove} onMouseLeave={() => setTooltip(null)}>
+          <defs>
+            <linearGradient id="greenFill" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor="#111111" stopOpacity={0.10}/>
+              <stop offset="100%" stopColor="#111111" stopOpacity={0.01}/>
+            </linearGradient>
+          </defs>
+          {yTicks.map(v => {
+            const y = padT + innerH - (v / maxVal) * innerH;
+            return (
+              <g key={v}>
+                <line x1={padL} y1={y} x2={padL + innerW} y2={y} stroke="#F0EDE9" strokeWidth={1} strokeDasharray="4 4"/>
+                <text x={padL - 6} y={y + 4} textAnchor="end" fontSize={11} fill="#aaa" fontFamily="DM Sans">
+                  {v === 0 ? '0' : `${v/1000}k`}
+                </text>
+              </g>
+            );
+          })}
+          {pts.map((p, i) => (
+            <text key={i} x={p.x} y={H - 4} textAnchor="middle" fontSize={11} fill="#aaa" fontFamily="DM Sans">
+              {chartData[i].month}
+            </text>
+          ))}
+          <line x1={refX} y1={padT} x2={refX} y2={padT + innerH} stroke="#ff4f3f" strokeWidth={1.5} strokeDasharray="5 4"/>
+          <text x={refX + 5} y={padT + 14} fontSize={10} fill="#ff4f3f" fontFamily="DM Sans">Runway estimé</text>
+          <path d={areaPath} fill="url(#greenFill)"/>
+          <path d={linePath} fill="none" stroke="#111111" strokeWidth={2} strokeLinejoin="round"/>
+          {tooltip && <circle cx={tooltip.x} cy={tooltip.y} r={5} fill="#111111" stroke="#fff" strokeWidth={2}/>}
+        </svg>
+        {tooltip && (
+          <div style={{
+            position: 'absolute',
+            left: `calc(${(tooltip.x / W) * 100}% + 8px)`,
+            top: `calc(${(tooltip.y / H) * 100}% - 20px)`,
+            background: '#fff', border: '1px solid #E4E0DB', borderRadius: 10,
+            padding: '8px 12px', boxShadow: '0 4px 16px rgba(0,0,0,0.1)',
+            pointerEvents: 'none', whiteSpace: 'nowrap', zIndex: 10
+          }}>
+            <div style={{ fontFamily: 'DM Sans', fontSize: 11, color: '#888', marginBottom: 2 }}>{tooltip.month}</div>
+            <div style={{ fontFamily: 'DM Serif Display', fontSize: 15, color: '#111' }}>
+              {tooltip.value.toLocaleString('fr-FR')} €
+            </div>
+          </div>
+        )}
+      </div>
+      <InnerDonut />
+      <InnerMrr />
+    </div>
+  );
+}
+
+function InnerDonut() {
+  const categories = [
+    { label: 'Salaires', pct: 55, color: '#111111' },
+    { label: 'Bureaux', pct: 24, color: '#1cb785' },
+    { label: 'Marketing', pct: 14, color: '#ff8f27' },
+    { label: 'SaaS & outils', pct: 7, color: '#9d89fc' },
+  ];
+  const R = 52, cx = 64, cy = 64, stroke = 22;
+  const circ = 2 * Math.PI * R;
+  let cumul = 0;
+  const slices = categories.map(c => {
+    const dash = (c.pct / 100) * circ;
+    const offset = circ - cumul;
+    cumul += dash;
+    return { ...c, dash, offset };
+  });
+
+  const scoreItems = [
+    { label: 'Liquidité', score: 72, color: '#1cb785' },
+    { label: 'Croissance', score: 85, color: '#2D5BE3' },
+    { label: 'Burn ratio', score: 48, color: '#ff8f27' },
+    { label: 'Autonomie', score: 61, color: '#9d89fc' },
+  ];
+  const globalScore = Math.round(scoreItems.reduce((a, s) => a + s.score, 0) / scoreItems.length);
+  const scoreColor = globalScore >= 70 ? '#1cb785' : globalScore >= 50 ? '#ff8f27' : '#ff4f3f';
+
+  return (
+    <div style={{ marginTop: 24, paddingTop: 20, borderTop: '1px solid #F0EDE9' }}>
+      <div className="elyse-donut-section" style={{ display: 'flex', gap: 32 }}>
+
+        {/* Répartition dépenses */}
+        <div style={{ flex: 1 }}>
+          <div style={{ fontFamily: 'DM Sans', fontSize: 15, fontWeight: 500, color: '#111', marginBottom: 14 }}>
+            Répartition des dépenses
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
+            <svg width={110} height={110} viewBox="0 0 128 128" style={{ flexShrink: 0 }}>
+              <circle cx={cx} cy={cy} r={R} fill="none" stroke="#F0EDE9" strokeWidth={stroke} />
+              {slices.map((s, i) => (
+                <circle key={i} cx={cx} cy={cy} r={R} fill="none"
+                  stroke={s.color} strokeWidth={stroke}
+                  strokeDasharray={`${s.dash} ${circ - s.dash}`}
+                  strokeDashoffset={s.offset}
+                  style={{ transform: 'rotate(-90deg)', transformOrigin: `${cx}px ${cy}px` }}
+                />
+              ))}
+              <text x={cx} y={cy - 5} textAnchor="middle" fontFamily="DM Serif Display" fontSize={16} fill="#111">Burn</text>
+              <text x={cx} y={cy + 13} textAnchor="middle" fontFamily="DM Sans" fontSize={10} fill="#888">mensuel</text>
+            </svg>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+              {categories.map((c, i) => (
+                <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 6, whiteSpace: 'nowrap' }}>
+                  <div style={{ width: 7, height: 7, borderRadius: 2, background: c.color, flexShrink: 0 }} />
+                  <span style={{ fontFamily: 'DM Sans', fontSize: 12, color: '#555' }}>{c.label}</span>
+                  <span style={{ fontFamily: 'DM Sans', fontSize: 12, fontWeight: 600, color: '#111' }}>{c.pct}%</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Séparateur vertical */}
+        <div className="elyse-donut-divider" style={{ width: 1, background: '#F0EDE9', flexShrink: 0 }} />
+
+        {/* Santé financière */}
+        <div style={{ flex: 1 }}>
+          <div style={{ fontFamily: 'DM Sans', fontSize: 15, fontWeight: 500, color: '#111', marginBottom: 14 }}>
+            Santé financière
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
+            <div style={{ flexShrink: 0, textAlign: 'center' }}>
+              <svg width={110} height={110} viewBox="0 0 120 120">
+                <circle cx={60} cy={60} r={48} fill="none" stroke="#F0EDE9" strokeWidth={10} />
+                <circle cx={60} cy={60} r={48} fill="none" stroke={scoreColor} strokeWidth={10}
+                  strokeDasharray={`${(globalScore / 100) * 2 * Math.PI * 48} ${2 * Math.PI * 48}`}
+                  strokeDashoffset={2 * Math.PI * 48 * 0.25}
+                  strokeLinecap="round"
+                />
+                <text x={60} y={55} textAnchor="middle" fontFamily="DM Serif Display" fontSize={26} fill="#111">{globalScore}</text>
+                <text x={60} y={72} textAnchor="middle" fontFamily="DM Sans" fontSize={10} fill="#888">/100</text>
+              </svg>
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 7, flex: 1 }}>
+              {scoreItems.map((s, i) => (
+                <div key={i}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 3 }}>
+                    <span style={{ fontFamily: 'DM Sans', fontSize: 11, color: '#888' }}>{s.label}</span>
+                    <span style={{ fontFamily: 'DM Sans', fontSize: 11, fontWeight: 600, color: '#111' }}>{s.score}</span>
+                  </div>
+                  <div style={{ height: 4, background: '#F0EDE9', borderRadius: 999 }}>
+                    <div style={{ height: 4, width: `${s.score}%`, background: s.color, borderRadius: 999 }} />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  );
+}
+
+function InnerMrr() {
+  const data = [
+    { m: 'Mai', v: 4200 }, { m: 'Jui', v: 5100 }, { m: 'Jul', v: 5800 },
+    { m: 'Aoû', v: 6400 }, { m: 'Sep', v: 7200 }, { m: 'Oct', v: 8100 },
+    { m: 'Nov', v: 9000 }, { m: 'Déc', v: 9800 }, { m: 'Jan', v: 10500 },
+    { m: 'Fév', v: 11400 }, { m: 'Mar', v: 12300 }, { m: 'Avr', v: 13100 },
+  ];
+  const [tooltip, setTooltip] = React.useState(null);
+  const W = 600, H = 140, padL = 10, padR = 10, padT = 12, padB = 24;
+  const innerW = W - padL - padR, innerH = H - padT - padB;
+  const maxV = Math.max(...data.map(d => d.v)) * 1.1;
+  const pts = data.map((d, i) => ({
+    x: padL + (i / (data.length - 1)) * innerW,
+    y: padT + innerH - (d.v / maxV) * innerH,
+    v: d.v, m: d.m,
+  }));
+  const linePath = pts.map((p, i) => `${i === 0 ? 'M' : 'L'}${p.x},${p.y}`).join(' ');
+  const areaPath = `${linePath} L${pts[pts.length-1].x},${padT+innerH} L${pts[0].x},${padT+innerH} Z`;
+  const growth = Math.round(((data[data.length-1].v - data[data.length-2].v) / data[data.length-2].v) * 100);
+  return (
+    <div style={{ marginTop: 24, paddingTop: 20, borderTop: '1px solid #F0EDE9' }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
+        <div style={{ fontFamily: 'DM Sans', fontSize: 15, fontWeight: 500, color: '#111' }}>
+          Évolution MRR
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <span style={{ fontFamily: 'DM Serif Display', fontSize: 18, color: '#111' }}>{data[data.length-1].v.toLocaleString('fr-FR')} €</span>
+          <span style={{ fontFamily: 'DM Sans', fontSize: 11, fontWeight: 600, color: '#1cb785', background: 'rgba(28,183,133,0.08)', borderRadius: 999, padding: '2px 8px' }}>+{growth}%</span>
+        </div>
+      </div>
+      <div style={{ position: 'relative' }}>
+        <svg width="100%" viewBox={`0 0 ${W} ${H}`} style={{ display: 'block', overflow: 'visible' }}
+          onMouseLeave={() => setTooltip(null)}>
+          <defs>
+            <linearGradient id="mrrFill" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor="#111111" stopOpacity="0.10"/>
+              <stop offset="100%" stopColor="#111111" stopOpacity="0"/>
+            </linearGradient>
+          </defs>
+          <path d={areaPath} fill="url(#mrrFill)"/>
+          <path d={linePath} fill="none" stroke="#111111" strokeWidth={2} strokeLinejoin="round"/>
+          {pts.map((p, i) => (
+            <g key={i}>
+              <rect x={p.x - 22} y={padT} width={44} height={innerH} fill="transparent"
+                onMouseEnter={() => setTooltip(p)} />
+              <text x={p.x} y={H - 3} textAnchor="middle" fontSize={10} fill="#bbb" fontFamily="DM Sans">{p.m}</text>
+            </g>
+          ))}
+          {tooltip && <circle cx={tooltip.x} cy={tooltip.y} r={4} fill="#111111" stroke="#fff" strokeWidth={2} pointerEvents="none"/>}
+        </svg>
+        {tooltip && (
+          <div style={{
+            position: 'absolute',
+            left: `calc(${(tooltip.x / W) * 100}% + 8px)`,
+            top: `calc(${(tooltip.y / H) * 100}% - 20px)`,
+            background: '#fff', border: '1px solid #E4E0DB', borderRadius: 10,
+            padding: '6px 10px', boxShadow: '0 4px 16px rgba(0,0,0,0.1)',
+            pointerEvents: 'none', whiteSpace: 'nowrap', zIndex: 10
+          }}>
+            <div style={{ fontFamily: 'DM Sans', fontSize: 11, color: '#888', marginBottom: 2 }}>{tooltip.m}</div>
+            <div style={{ fontFamily: 'DM Serif Display', fontSize: 14, color: '#111' }}>{tooltip.v.toLocaleString('fr-FR')} €</div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function AlertBadge({ type = 'warning' }) {
+  return (
+    <div style={{
+      background: type === 'warning' ? 'rgba(255,143,39,0.1)' : 'rgba(255,79,63,0.1)',
+      color: type === 'warning' ? '#ff8f27' : '#ff4f3f',
+      borderRadius: 999, padding: '3px 10px',
+      fontFamily: 'DM Sans', fontSize: 11, fontWeight: 600,
+      letterSpacing: '0.06em', whiteSpace: 'nowrap'
+    }}>
+      {type === 'warning' ? 'Warning' : 'Critique'}
+    </div>
+  );
+}
+
+function AlertItem({ icon, text, date, borderColor, action, type = 'warning' }) {
+  return (
+    <div style={{ borderLeft: `3px solid ${borderColor}`, paddingLeft: 14, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12 }}>
+      <div style={{ flex: 1 }}>
+        <div style={{ fontFamily: 'DM Sans', fontSize: 13, fontWeight: 500, color: '#111', marginBottom: 3 }}>{icon} {text}</div>
+        <div style={{ fontFamily: 'DM Sans', fontSize: 12, color: '#888', marginBottom: action ? 6 : 0 }}>{date}</div>
+        {action && (
+          <div style={{ fontFamily: 'DM Sans', fontSize: 12, color: borderColor, display: 'flex', alignItems: 'center', gap: 4 }}>
+            <span>→</span><span>{action}</span>
+          </div>
+        )}
+      </div>
+      <AlertBadge type={type} />
+    </div>
+  );
+}
+
+function AlertsCard() {
+  return (
+    <div style={{ background: '#fff', borderRadius: 20, padding: '24px', boxShadow: '0 1px 3px rgba(0,0,0,0.05)', border: '1px solid #E4E0DB' }}>
+      <div style={{ fontSize: 15, fontWeight: 500, color: '#111', marginBottom: 20 }}>
+        Alertes actives
+      </div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
+        <AlertItem icon="⚠️" text="Burn en hausse de 18% ce mois" date="Aujourd'hui" borderColor="#ff8f27" action="Identifier les postes en hausse" type="warning" />
+        <div style={{ height: 1, background: '#F0EDE9' }}/>
+        <AlertItem icon="📉" text="Runway sous le seuil recommandé (9 mois)" date="Aujourd'hui" borderColor="#ff4f3f" action="Revoir le plan de dépenses Q2" type="critique" />
+      </div>
+    </div>
+  );
+}
+
+function NextDeadlineCard() {
+  const items = [
+    { label: 'Salaires', amount: '8 500 €', days: 12, color: '#111' },
+    { label: 'Loyer bureaux', amount: '1 200 €', days: 18, color: '#111' },
+    { label: 'Abonnements SaaS', amount: '340 €', days: 24, color: '#111' },
+  ];
+  return (
+    <div style={{ background: '#fff', borderRadius: 20, padding: '24px', boxShadow: '0 1px 3px rgba(0,0,0,0.05)', border: '1px solid #E4E0DB' }}>
+      <div style={{ fontSize: 15, fontWeight: 500, color: '#111', marginBottom: 20 }}>
+        Prochaines échéances
+      </div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
+        {items.map((item, i) => (
+          <div key={i}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 0' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <div style={{ width: 8, height: 8, borderRadius: '50%', background: item.color, flexShrink: 0 }} />
+                <span style={{ fontFamily: 'DM Sans', fontSize: 13, color: '#111' }}>{item.label}</span>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                <span style={{ fontFamily: 'DM Serif Display', fontSize: 16, color: '#111' }}>{item.amount}</span>
+                <span style={{
+                  fontFamily: 'DM Sans', fontSize: 11,
+                  color: item.days <= 14 ? '#ff8f27' : '#888',
+                  background: item.days <= 14 ? 'rgba(255,143,39,0.08)' : '#F7F5F2',
+                  borderRadius: 999, padding: '2px 8px', whiteSpace: 'nowrap'
+                }}>dans {item.days}j</span>
+              </div>
+            </div>
+            {i < items.length - 1 && <div style={{ height: 1, background: '#F0EDE9' }} />}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function ScenarioRow({ label, result, last }) {
+  return (
+    <>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 0' }}>
+        <span style={{ fontFamily: 'DM Sans', fontSize: 13, color: 'rgba(255,255,255,0.6)', flex: 1 }}>{label}</span>
+        <span style={{ fontFamily: 'DM Sans', fontSize: 16, color: 'rgba(255,255,255,0.3)', margin: '0 12px' }}>→</span>
+        <span style={{ fontFamily: 'DM Serif Display', fontSize: 20, color: '#1cb785', letterSpacing: '-0.3px' }}>{result}</span>
+      </div>
+      {!last && <div style={{ height: 1, background: 'rgba(255,255,255,0.08)' }}/>}
+    </>
+  );
+}
+
+function ScenariosCard({ show }) {
+  if (!show) return null;
+  return (
+    <div style={{ background: '#111111', borderRadius: 20, padding: '22px 24px', boxShadow: '0 1px 3px rgba(0,0,0,0.2)', border: '1px solid #222' }}>
+      <div style={{ fontFamily: 'DM Serif Display', fontSize: 20, color: '#fff', marginBottom: 2 }}>Et si…</div>
+      <ScenarioRow label="Réduction burn −20%" result="+2,1 mois" />
+      <ScenarioRow label="Nouveau client MRR +2k€" result="+1,4 mois" />
+      <ScenarioRow label="Levée de fonds +50k€" result="+5,1 mois" last />
+    </div>
+  );
+}
+
+/* ── Landing ── */
+/* ── Demo Badge ── */
+function DemoBadge() {
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12, color: '#888', fontFamily: 'DM Sans' }}>
+      <span>Données fictives · Démo Alpact Studio</span>
+      <span style={{ color: '#E4E0DB' }}>·</span>
+      <a href="https://calendly.com/tbo-alpact/30min?month=2026-04" target="_blank" rel="noopener noreferrer" style={{
+        color: '#fff', fontWeight: 600, textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 4,
+        background: '#1cb785', borderRadius: 999, padding: '3px 12px', fontSize: 11,
+      }}>
+        Prendre RDV →
+      </a>
+    </div>
+  );
+}
+
+/* ── Welcome Screen ── */
+function WelcomeScreen({ onEnter }) {
+  const [prenom, setPrenom] = React.useState('');
+  const [nom, setNom] = React.useState('');
+  const [error, setError] = React.useState(false);
+
+  const handleSubmit = () => {
+    if (!prenom.trim() || !nom.trim()) { setError(true); return; }
+    const fullName = `${prenom.trim()} ${nom.trim()}`;
+    localStorage.setItem('elyse_user', fullName);
+    fetch(`https://script.google.com/macros/s/AKfycbycM1o90tfn7YZX7YlbYxUK5IgsCKIQ-nPsTYKUqapyhEUi2PY1jb52Rq5jsjP5WCq_lQ/exec?name=${encodeURIComponent(fullName)}&app=elyse`);
+    onEnter(fullName);
+  };
+
+  const handleKey = (e) => { if (e.key === 'Enter') handleSubmit(); };
+
+  return (
+    <div style={{ minHeight: '100vh', backgroundImage: 'url("background2.png")', backgroundSize: 'cover', backgroundPosition: 'center 20%', backgroundRepeat: 'no-repeat', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
+      <div className="fade-up elyse-welcome-box" style={{ width: 400, textAlign: 'center' }}>
+        <img src="logo.png" alt="Elyse" style={{ height: 80, width: 'auto', display: 'block', margin: '0 auto 40px' }} />
+        <div style={{ fontFamily: 'DM Serif Display', fontSize: 32, color: '#111', marginBottom: 8 }}>Bienvenue</div>
+        <div style={{ fontFamily: 'DM Sans', fontSize: 14, color: '#888', marginBottom: 40 }}>Entrez votre nom pour accéder à votre démo personnalisée.</div>
+        <div className="elyse-welcome-inputs" style={{ display: 'flex', gap: 12, marginBottom: 12 }}>
+          <input type="text" placeholder="Prénom" value={prenom}
+            onChange={e => { setPrenom(e.target.value); setError(false); }}
+            onKeyDown={handleKey}
+            style={{ flex: 1, fontFamily: 'DM Sans', fontSize: 14, padding: '12px 16px', border: `1.5px solid ${error && !prenom.trim() ? '#ff4f3f' : '#E4E0DB'}`, borderRadius: 12, outline: 'none', background: '#fff', color: '#111' }}
+          />
+          <input type="text" placeholder="Nom" value={nom}
+            onChange={e => { setNom(e.target.value); setError(false); }}
+            onKeyDown={handleKey}
+            style={{ flex: 1, fontFamily: 'DM Sans', fontSize: 14, padding: '12px 16px', border: `1.5px solid ${error && !nom.trim() ? '#ff4f3f' : '#E4E0DB'}`, borderRadius: 12, outline: 'none', background: '#fff', color: '#111' }}
+          />
+        </div>
+        {error && <div style={{ fontFamily: 'DM Sans', fontSize: 12, color: '#ff4f3f', marginBottom: 12 }}>Merci de renseigner prénom et nom.</div>}
+        <button onClick={handleSubmit}
+          style={{ width: '100%', padding: '14px', background: '#111', color: '#fff', border: 'none', borderRadius: 12, fontFamily: 'DM Sans', fontSize: 14, fontWeight: 600, cursor: 'pointer', transition: 'background 0.15s' }}
+          onMouseEnter={e => e.currentTarget.style.background = '#333'}
+          onMouseLeave={e => e.currentTarget.style.background = '#111'}
+        >
+          Accéder à la démo →
+        </button>
+        <div style={{ marginTop: 24, display: 'flex', justifyContent: 'center' }}>
+          <DemoBadge />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function Landing({ onSelect, userName }) {
+  const cards = [
+    {
+      key: 'pilotage',
+      title: 'Pilotage',
+      desc: 'Suivez votre trésorerie, burn et runway en temps réel. Visualisez vos métriques clés et anticipez les risques financiers.',
+      color: '#1cb785',
+      bg: 'rgba(28,183,133,0.06)',
+      icon: (
+        <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
+          <path d="M4 24 L10 16 L15 20 L22 10 L28 14" stroke="#1cb785" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/>
+          <circle cx="28" cy="14" r="2" fill="#1cb785"/>
+        </svg>
+      ),
+      tags: ['Trésorerie', 'Runway', 'Burn', 'MRR', 'Alertes'],
+    },
+    {
+      key: 'livrables',
+      title: 'Livrables',
+      desc: 'Générez, éditez et challengez vos documents financiers et stratégiques.',
+      color: '#2D5BE3',
+      bg: 'rgba(45,91,227,0.06)',
+      icon: (
+        <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
+          <rect x="6" y="4" width="20" height="24" rx="3" stroke="#2D5BE3" strokeWidth="2"/>
+          <path d="M11 11h10M11 16h10M11 21h6" stroke="#2D5BE3" strokeWidth="2" strokeLinecap="round"/>
+        </svg>
+      ),
+      tags: ['Business Plan', 'Plan de financement', 'Conformité deck'],
+    },
+  ];
+
+  return (
+    <div style={{ minHeight: '100vh', backgroundImage: 'url("background2.png")', backgroundSize: 'cover', backgroundPosition: 'center 20%', backgroundRepeat: 'no-repeat' }}>
+      <nav className="elyse-nav" style={{
+        height: 64, background: 'rgba(255,255,255,0.85)', backdropFilter: 'blur(12px)', borderBottom: '1px solid rgba(228,224,219,0.6)',
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        padding: '0 48px', position: 'sticky', top: 0, zIndex: 100,
+        boxShadow: '0 1px 3px rgba(0,0,0,0.04)'
+      }}>
+        <img src="logo.png" alt="Elyse" style={{ height: 44, width: 'auto', display: 'block' }} />
+        <span className="elyse-demodemo"><DemoBadge /></span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <Avatar initials={userName ? userName.split(' ').map(n => n[0]).join('').toUpperCase().slice(0,2) : 'TB'} />
+          <span className="elyse-nav-user-name" style={{ fontFamily: 'DM Sans', fontSize: 14, fontWeight: 500, color: '#111' }}>{userName || 'Thomas B.'}</span>
+        </div>
+      </nav>
+
+      <main className="elyse-landing-main" style={{ maxWidth: 820, margin: '0 auto', padding: '88px 40px 80px' }}>
+        <div style={{ textAlign: 'center', marginBottom: 72 }} className="fade-up">
+          <div className="elyse-landing-title" style={{ fontFamily: 'DM Serif Display', fontSize: 48, color: '#111', lineHeight: 1.1, marginBottom: 4 }}>
+            {new Date().getHours() >= 18 ? 'Bonsoir' : 'Bonjour'} {userName ? userName.split(' ')[0] : 'Thomas B.'}
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'flex-end', paddingRight: '28%' }}>
+            <img src="s1.svg" alt="" style={{ width: 180, marginTop: 2 }} />
+          </div>
+          <div style={{ fontSize: 16, color: '#999', marginTop: 16, fontWeight: 400 }}>
+            Que voulez-vous faire aujourd'hui ?
+          </div>
+        </div>
+
+        <div className="elyse-landing-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>
+          {cards.map((c, idx) => (
+            <div key={c.key} onClick={() => onSelect(c.key)}
+              className={`landing-card landing-card-${c.key === 'pilotage' ? 'green' : 'blue'} fade-up fade-up-${idx + 2}`}
+            >
+              <div style={{ marginBottom: 28 }}>
+                <div style={{ width: 48, height: 48, borderRadius: 14, background: c.bg, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  {c.icon}
+                </div>
+              </div>
+              <div style={{ fontFamily: 'DM Serif Display', fontSize: 28, color: '#111', marginBottom: 10, letterSpacing: '-0.3px' }}>{c.title}</div>
+              <div style={{ fontSize: 14, color: '#888', lineHeight: 1.65 }}>{c.desc}</div>
+            </div>
+          ))}
+        </div>
+      </main>
+    </div>
+  );
+}
+
+/* ── Livrables ── */
+const ACTION_ICONS = {
+  'Générer': <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M6.5 1v2M6.5 10v2M1 6.5h2M10 6.5h2M2.9 2.9l1.4 1.4M8.7 8.7l1.4 1.4M2.9 10.1l1.4-1.4M8.7 4.3l1.4-1.4" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/></svg>,
+  'Éditer': <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M2 10.5h9M8.5 2l2.5 2.5-6 6H2.5V9l6-7z" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/></svg>,
+  'Challenger': <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><circle cx="6.5" cy="6.5" r="5" stroke="currentColor" strokeWidth="1.3"/><path d="M6.5 4.5v2.5l1.5 1.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/></svg>,
+};
+function ActionBtn({ label }) {
+  const map = { 'Générer': 'generer', 'Éditer': 'editer', 'Challenger': 'challenger' };
+  const cls = `action-btn action-btn-${map[label] || label.toLowerCase()}`;
+  return (
+    <div className={cls}>
+      {ACTION_ICONS[label]}
+      {label}
+    </div>
+  );
+}
+
+function Livrables({ onBack, userName, initials }) {
+  const docs = [
+    {
+      title: 'Business Plan',
+      desc: 'Document complet présentant votre modèle économique, vos projections financières et votre stratégie de croissance.',
+      status: 'À faire',
+      statusColor: '#888',
+      statusBg: '#F0EDE9',
+      actions: [
+        { label: 'Générer', color: '#2D5BE3', bg: 'rgba(45,91,227,0.08)' },
+        { label: 'Éditer', color: '#9d89fc', bg: 'rgba(157,137,252,0.08)' },
+        { label: 'Challenger', color: '#ff8f27', bg: 'rgba(255,143,39,0.08)' },
+      ],
+      detail: 'Elyse génère une structure complète, vous éditez section par section, puis simule les questions d\'un investisseur.',
+    },
+    {
+      title: 'Plan de financement',
+      desc: 'Tableau de bord des besoins en financement, sources de fonds et projections de trésorerie sur 36 mois.',
+      status: 'En cours',
+      statusColor: '#ff8f27',
+      statusBg: 'rgba(255,143,39,0.08)',
+      actions: [
+        { label: 'Générer', color: '#2D5BE3', bg: 'rgba(45,91,227,0.08)' },
+        { label: 'Éditer', color: '#9d89fc', bg: 'rgba(157,137,252,0.08)' },
+        { label: 'Challenger', color: '#ff8f27', bg: 'rgba(255,143,39,0.08)' },
+      ],
+      detail: 'Synchronisé avec vos données de pilotage. Elyse projette les scénarios et identifie les gaps de financement.',
+    },
+    {
+      title: 'Conformité deck investisseur',
+      desc: 'Analyse de votre pitch deck pour vérifier qu\'il couvre tous les critères attendus par les investisseurs.',
+      status: 'Complété',
+      statusColor: '#1cb785',
+      statusBg: 'rgba(28,183,133,0.08)',
+      actions: [
+        { label: 'Générer', color: '#2D5BE3', bg: 'rgba(45,91,227,0.08)' },
+        { label: 'Éditer', color: '#9d89fc', bg: 'rgba(157,137,252,0.08)' },
+        { label: 'Challenger', color: '#ff8f27', bg: 'rgba(255,143,39,0.08)' },
+      ],
+      detail: 'Elyse analyse votre deck slide par slide, identifie les manques et suggère des améliorations ciblées.',
+    },
+  ];
+
+  return (
+    <div style={{ minHeight: '100vh', background: '#F7F5F2' }}>
+      <nav className="elyse-nav" style={{
+        height: 64, background: '#fff', borderBottom: '1px solid #E4E0DB',
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        padding: '0 48px', position: 'sticky', top: 0, zIndex: 100,
+        boxShadow: '0 1px 3px rgba(0,0,0,0.04)'
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
+          <img src="logo.png" alt="Elyse" style={{ height: 44, width: 'auto', display: 'block' }} />
+          <div className="elyse-nav-breadcrumb" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <div style={{ width: 1, height: 24, background: '#E4E0DB' }} />
+            <button onClick={onBack} style={{
+              appearance: 'none', border: 'none', background: 'none', cursor: 'pointer',
+              display: 'flex', alignItems: 'center', gap: 6,
+              fontFamily: 'DM Sans', fontSize: 13, color: '#888', padding: 0,
+            }}>
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                <path d="M10 12L6 8l4-4" stroke="#888" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+              Accueil
+            </button>
+            <span style={{ fontFamily: 'DM Sans', fontSize: 13, color: '#bbb' }}>/</span>
+            <span style={{ fontFamily: 'DM Sans', fontSize: 13, fontWeight: 600, color: '#111' }}>Livrables</span>
+          </div>
+          <button className="elyse-mobile-back" onClick={onBack} style={{
+            appearance: 'none', border: 'none', background: 'none', cursor: 'pointer',
+            alignItems: 'center', gap: 4,
+            fontFamily: 'DM Sans', fontSize: 13, color: '#888', padding: 0,
+          }}>
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+              <path d="M10 12L6 8l4-4" stroke="#888" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+          </button>
+        </div>
+        <span className="elyse-demodemo"><DemoBadge /></span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <Avatar initials={initials} />
+          <span style={{ fontFamily: 'DM Sans', fontSize: 14, fontWeight: 500, color: '#111' }}>{userName || 'Thomas B.'}</span>
+        </div>
+      </nav>
+
+      <main className="elyse-livrables-main" style={{ maxWidth: 800, margin: '0 auto', padding: '64px 40px 80px' }}>
+        <div style={{ marginBottom: 48 }} className="fade-up">
+          <div style={{ fontFamily: 'DM Serif Display', fontSize: 40, color: '#111', marginBottom: 8, letterSpacing: '-0.5px' }}>Livrables</div>
+          <div style={{ fontSize: 15, color: '#999', fontWeight: 400 }}>Générez, éditez et challengez vos documents financiers et stratégiques.</div>
+        </div>
+
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+          {docs.map((doc, i) => (
+            <div key={i} className={`livrable-card fade-up fade-up-${i + 1}`}>
+              <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 8 }}>
+                <div style={{ fontFamily: 'DM Serif Display', fontSize: 22, color: '#111', letterSpacing: '-0.2px' }}>{doc.title}</div>
+                <span style={{
+                  fontSize: 11, fontWeight: 600,
+                  color: doc.statusColor, background: doc.statusBg,
+                  borderRadius: 999, padding: '4px 12px', whiteSpace: 'nowrap', marginTop: 4
+                }}>{doc.status}</span>
+              </div>
+              <div style={{ fontSize: 13, color: '#888', lineHeight: 1.65, marginBottom: 4 }}>{doc.desc}</div>
+              <div style={{ fontSize: 12, color: '#bbb', fontStyle: 'italic', marginBottom: 24 }}>{doc.detail}</div>
+              <div style={{ height: 1, background: '#F0EDE9', marginBottom: 20 }} />
+              <div style={{ display: 'flex', gap: 8 }}>
+                {doc.actions.map((a, j) => <ActionBtn key={j} label={a.label} />)}
+              </div>
+            </div>
+          ))}
+        </div>
+      </main>
+    </div>
+  );
+}
+
+/* ── App ── */
+function App() {
+  const [view, setView] = React.useState('welcome');
+  const [tweaks, setTweak] = useTweaks(TWEAK_DEFAULTS);
+  const [userName, setUserName] = React.useState('');
+
+  React.useEffect(() => {
+    const saved = localStorage.getItem('elyse_user') || localStorage.getItem('alpact_user');
+    if (saved) { setUserName(saved); setView('landing'); }
+  }, []);
+
+  const initials = userName ? userName.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2) : 'TB';
+  const handleEnter = (name) => { setUserName(name); setView('landing'); };
+
+  if (view === 'welcome') return <WelcomeScreen onEnter={handleEnter} />;
+  if (view === 'landing') return <Landing onSelect={setView} userName={userName} />;
+  if (view === 'livrables') return <Livrables onBack={() => setView('landing')} userName={userName} initials={initials} />;
+
+  return (
+    <div style={{ minHeight: '100vh', background: '#F7F5F2' }}>
+      <nav className="elyse-nav" style={{
+        height: 64, background: '#fff', borderBottom: '1px solid #E4E0DB',
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        padding: '0 48px', position: 'sticky', top: 0, zIndex: 100,
+        boxShadow: '0 1px 3px rgba(0,0,0,0.04)'
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
+          <img src="logo.png" alt="Elyse" style={{ height: 44, width: 'auto', display: 'block' }} />
+          <span className="elyse-nav-sync" style={{ fontFamily: 'DM Sans', fontSize: 12, color: '#888' }}>Dernière sync : aujourd'hui à 09h14</span>
+          <div className="elyse-nav-breadcrumb" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <div style={{ width: 1, height: 24, background: '#E4E0DB' }} />
+            <button onClick={() => setView('landing')} style={{
+              appearance: 'none', border: 'none', background: 'none', cursor: 'pointer',
+              display: 'flex', alignItems: 'center', gap: 6,
+              fontFamily: 'DM Sans', fontSize: 13, color: '#888', padding: 0,
+            }}>
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                <path d="M10 12L6 8l4-4" stroke="#888" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+              Accueil
+            </button>
+            <span style={{ fontFamily: 'DM Sans', fontSize: 13, color: '#bbb' }}>/</span>
+            <span style={{ fontFamily: 'DM Sans', fontSize: 13, fontWeight: 600, color: '#111' }}>Pilotage</span>
+          </div>
+          <button className="elyse-mobile-back" onClick={() => setView('landing')} style={{
+            appearance: 'none', border: 'none', background: 'none', cursor: 'pointer',
+            alignItems: 'center', gap: 4,
+            fontFamily: 'DM Sans', fontSize: 13, color: '#888', padding: 0,
+          }}>
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+              <path d="M10 12L6 8l4-4" stroke="#888" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+          </button>
+        </div>
+        <span className="elyse-demodemo"><DemoBadge /></span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+          <BellIcon />
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <Avatar initials={initials} />
+            <span className="elyse-nav-user-name" style={{ fontFamily: 'DM Sans', fontSize: 14, fontWeight: 500, color: '#111' }}>{userName || 'Thomas B.'}</span>
+          </div>
+        </div>
+      </nav>
+      <main className="elyse-main" style={{ maxWidth: 1360, margin: '0 auto', padding: '32px 40px 64px' }}>
+        <HeroCard runway={tweaks.runway} tresorerie={tweaks.tresorerie} burn={tweaks.burn} />
+        <div className="elyse-grid-3" style={{ display: 'grid', gridTemplateColumns: '256px 1fr 296px', gap: 16, alignItems: 'start' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+            <MetricCard label="Trésorerie disponible" value={fmt(tweaks.tresorerie)} trend="+2% ce mois" />
+            <MetricCard label="Cash burn mensuel" value={fmt(tweaks.burn)} trend="+18% vs mois dernier" warning />
+            <MetricCard label="MRR" value={fmt(tweaks.mrr)} trend="+7% ce mois" />
+          </div>
+          <RunwayChart />
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+            <AlertsCard />
+            <NextDeadlineCard />
+            <ScenariosCard show={tweaks.showScenarios} />
+          </div>
+        </div>
+      </main>
+      <TweaksPanel>
+        <TweakSlider label="Runway (mois)" value={tweaks.runway} min={1} max={18} step={0.1} onChange={v => setTweak('runway', v)} />
+        <TweakSlider label="Trésorerie (€)" value={tweaks.tresorerie} min={10000} max={300000} step={1000} onChange={v => setTweak('tresorerie', v)} />
+        <TweakSlider label="Burn mensuel (€)" value={tweaks.burn} min={2000} max={50000} step={200} onChange={v => setTweak('burn', v)} />
+        <TweakSlider label="MRR (€)" value={tweaks.mrr} min={0} max={50000} step={200} onChange={v => setTweak('mrr', v)} />
+        <TweakToggle label="Afficher scénarios" value={tweaks.showScenarios} onChange={v => setTweak('showScenarios', v)} />
+      </TweaksPanel>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+</body>
+</html>
