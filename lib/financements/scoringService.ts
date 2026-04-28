@@ -18,7 +18,8 @@ interface Criterion {
   label: string;
   field: string;
   operator: string;
-  value: string | number | boolean | string[] | number[];
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  value: any;
   weight: number;
   mandatory: boolean;
 }
