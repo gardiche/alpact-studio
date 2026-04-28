@@ -19,6 +19,9 @@ const dmSans = DM_Sans({
 export const metadata: Metadata = {
   title: "Alpact Studio",
   description: "La suite de pilotage pour fondateurs ambitieux.",
+  icons: {
+    icon: "/emo1.svg",
+  },
 };
 
 export default function RootLayout({

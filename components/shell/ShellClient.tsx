@@ -18,9 +18,17 @@ export function ShellClient({ user, notifications, children }: ShellClientProps)
   const { setUser, setNotifications, copilotOpen } = useAppStore();
   const [animDone, setAnimDone] = useState(false);
   const [showAnim, setShowAnim] = useState(false);
+  const [resolvedFirstName, setResolvedFirstName] = useState("vous");
 
   useEffect(() => {
-    setUser(user);
+    const stored = localStorage.getItem("alpact_user") || localStorage.getItem("elyse_user") || localStorage.getItem("gyna_user");
+    const firstName = stored ? stored.split(" ")[0] : null;
+    if (firstName) {
+      setResolvedFirstName(firstName);
+      setUser({ ...user, first_name: firstName });
+    } else {
+      setUser(user);
+    }
     setNotifications(notifications);
 
     const key = `welcome_shown_${user.id}`;
@@ -43,7 +51,7 @@ export function ShellClient({ user, notifications, children }: ShellClientProps)
       {showAnim && !animDone && (
         <WelcomeAnimation
           userId={user.id}
-          firstName={user.first_name || "vous"}
+          firstName={resolvedFirstName}
           onComplete={handleAnimComplete}
         />
       )}
