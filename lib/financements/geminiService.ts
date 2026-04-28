@@ -91,37 +91,38 @@ export const parseDeck = async (
     });
 
     if (response.text) {
-      const extracted: Record<string, string | number> = JSON.parse(response.text);
+      const extracted: Record<string, unknown> = JSON.parse(response.text);
+      const str = (v: unknown): string => (typeof v === 'string' ? v : '');
 
       const projectData: ProjectData = {
-        summary: extracted.summary || '',
-        market: extracted.market || '',
-        problem: extracted.problem || '',
-        solution: extracted.solution || '',
-        innovation: extracted.innovation || '',
-        business_model: extracted.business_model || '',
-        team: extracted.team || '',
-        traction: extracted.traction || '',
-        maturity: extracted.maturity || '',
-        financial_need: extracted.financial_need || '',
-        product_state: extracted.product_state || '',
-        sector: extracted.sector || '',
+        summary: str(extracted.summary),
+        market: str(extracted.market),
+        problem: str(extracted.problem),
+        solution: str(extracted.solution),
+        innovation: str(extracted.innovation),
+        business_model: str(extracted.business_model),
+        team: str(extracted.team),
+        traction: str(extracted.traction),
+        maturity: str(extracted.maturity),
+        financial_need: str(extracted.financial_need),
+        product_state: str(extracted.product_state),
+        sector: str(extracted.sector),
       };
 
       const questionnaireData: Partial<QuestionnaireData> = {};
-      if (extracted.location) questionnaireData.location = extracted.location;
-      if (extracted.department) questionnaireData.department = extracted.department;
-      if (extracted.departmentName) questionnaireData.departmentName = extracted.departmentName;
-      if (extracted.incorporationDate) questionnaireData.incorporationDate = extracted.incorporationDate;
-      if (extracted.sector) questionnaireData.sector = extracted.sector;
-      if (extracted.personalInvestment) questionnaireData.personalInvestment = extracted.personalInvestment;
-      if (extracted.revenue) questionnaireData.revenue = extracted.revenue;
-      if (extracted.amountRequested) questionnaireData.amountRequested = extracted.amountRequested;
-      if (extracted.jobsPlanned !== undefined) questionnaireData.jobsPlanned = extracted.jobsPlanned;
-      if (extracted.legalStructure) questionnaireData.legalStructure = extracted.legalStructure;
-      if (extracted.trlLevel) questionnaireData.trlLevel = extracted.trlLevel;
-      if (extracted.innovationLevel) questionnaireData.innovationLevel = extracted.innovationLevel;
-      if (extracted.fundsUsage) questionnaireData.fundsUsage = extracted.fundsUsage;
+      if (extracted.location) questionnaireData.location = str(extracted.location);
+      if (extracted.department) questionnaireData.department = str(extracted.department);
+      if (extracted.departmentName) questionnaireData.departmentName = str(extracted.departmentName);
+      if (extracted.incorporationDate) questionnaireData.incorporationDate = str(extracted.incorporationDate);
+      if (extracted.sector) questionnaireData.sector = str(extracted.sector);
+      if (extracted.personalInvestment) questionnaireData.personalInvestment = str(extracted.personalInvestment);
+      if (extracted.revenue) questionnaireData.revenue = str(extracted.revenue);
+      if (extracted.amountRequested) questionnaireData.amountRequested = str(extracted.amountRequested);
+      if (extracted.jobsPlanned !== undefined) questionnaireData.jobsPlanned = Number(extracted.jobsPlanned);
+      if (extracted.legalStructure) questionnaireData.legalStructure = str(extracted.legalStructure);
+      if (extracted.trlLevel) questionnaireData.trlLevel = str(extracted.trlLevel);
+      if (extracted.innovationLevel) questionnaireData.innovationLevel = str(extracted.innovationLevel);
+      if (extracted.fundsUsage) questionnaireData.fundsUsage = str(extracted.fundsUsage);
 
       return { projectData, questionnaireData };
     }
