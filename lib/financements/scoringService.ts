@@ -18,7 +18,7 @@ interface Criterion {
   label: string;
   field: string;
   operator: string;
-  value: any;
+  value: string | number | boolean | string[] | number[];
   weight: number;
   mandatory: boolean;
 }
@@ -170,10 +170,6 @@ export const generateDiagnosticFromRules = (
   const programs = (programsConfig.programs as ProgramConfig[]).map(program =>
     evaluateProgram(program, projectData, questionnaireData)
   );
-
-  const globalScore = programs.length > 0
-    ? Math.round(programs.reduce((acc, p) => acc + p.score, 0) / programs.length)
-    : 0;
 
   const eligibleCount = programs.filter(p => p.status === 'Eligible').length;
   const reviewCount = programs.filter(p => p.status === 'Review').length;

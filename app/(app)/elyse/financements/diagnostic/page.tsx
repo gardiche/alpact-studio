@@ -8,14 +8,14 @@ import { ProgramDiagnostic } from '@/lib/financements/types';
 
 export default function DiagnosticPage() {
   const router = useRouter();
-  const { diagnosticResults, projectData } = useFinancements();
+  const { diagnosticResults } = useFinancements();
   const [selectedProgram, setSelectedProgram] = useState<ProgramDiagnostic | null>(null);
 
   if (!diagnosticResults) {
     return (
       <div className="min-h-screen bg-[#F7F5F2] flex items-center justify-center">
         <div className="text-center">
-          <p className="font-body text-[16px] text-[#888888] mb-6">Aucun résultat. Lancez d'abord le diagnostic.</p>
+          <p className="font-body text-[16px] text-[#888888] mb-6">Aucun résultat. Lancez d&apos;abord le diagnostic.</p>
           <button
             onClick={() => router.push('/elyse/financements/upload')}
             className="font-body font-semibold text-[14px] bg-[#111111] text-white px-8 py-3 rounded-full hover:opacity-80 transition-opacity"
