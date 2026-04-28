@@ -1,0 +1,325 @@
+{
+  "programs": [
+    {
+      "id": "bourse-french-tech",
+      "name": "Bourse French Tech",
+      "description": "Programme d'accompagnement et de financement dédié aux startups innovantes de moins d'un an.",
+      "criteria": [
+        {
+          "id": "age",
+          "label": "Entreprise créée depuis moins d'un an",
+          "field": "incorporationDate",
+          "operator": "age_less_than",
+          "value": 1,
+          "weight": 20,
+          "mandatory": true
+        },
+        {
+          "id": "innovation",
+          "label": "Innovation forte ou de rupture",
+          "field": "innovationLevel",
+          "operator": "in",
+          "value": ["Innovation forte", "Innovation de rupture"],
+          "weight": 25,
+          "mandatory": true
+        },
+        {
+          "id": "revenue_cap",
+          "label": "Chiffre d'affaires ou total bilan inférieur à 10 millions d'euros",
+          "field": "revenue",
+          "operator": "revenue_under_10M",
+          "value": 10000000,
+          "weight": 15,
+          "mandatory": true
+        },
+        {
+          "id": "employees",
+          "label": "Moins de 50 employés",
+          "field": "jobsPlanned",
+          "operator": "less_than",
+          "value": 50,
+          "weight": 10,
+          "mandatory": false
+        },
+        {
+          "id": "sector",
+          "label": "Secteur technologique ou innovant",
+          "field": "sector",
+          "operator": "in",
+          "value": ["Tech & Internet", "Recherche", "Industrie", "Energie"],
+          "weight": 15,
+          "mandatory": false
+        },
+        {
+          "id": "traction",
+          "label": "Traction initiale validée",
+          "field": "trlLevel",
+          "operator": "in",
+          "value": ["MVP lancé", "Premiers utilisateurs/clients", "Croissance initiale"],
+          "weight": 15,
+          "mandatory": false
+        }
+      ],
+      "scoring": {
+        "threshold_eligible": 80,
+        "threshold_review": 60
+      },
+      "recommendations": {
+        "missing_age": "Votre entreprise doit avoir moins d'un an pour être éligible à la Bourse French Tech",
+        "missing_innovation": "Déposer un brevet ou une enveloppe Soleau pour protéger votre innovation",
+        "missing_revenue_cap": "Votre chiffre d'affaires ou total bilan doit être inférieur à 10 millions d'euros",
+        "missing_employees": "Maintenir l'effectif sous 50 employés pour rester éligible",
+        "missing_traction": "Valider votre MVP auprès de premiers clients ou utilisateurs"
+      }
+    },
+    {
+      "id": "pret-innovation-bpifrance",
+      "name": "Prêt Innovation Bpifrance",
+      "description": "Prêt sans garantie pour financer l'innovation, adossé à des fonds propres ou quasi-fonds propres.",
+      "criteria": [
+        {
+          "id": "innovation_verified",
+          "label": "Innovation vérifiée (technologique ou d'usage)",
+          "field": "innovationLevel",
+          "operator": "in",
+          "value": ["Amélioration incrémentale", "Innovation forte", "Innovation de rupture"],
+          "weight": 30,
+          "mandatory": true
+        },
+        {
+          "id": "equity",
+          "label": "Apport en fonds propres ou quasi-fonds propres",
+          "field": "personalInvestment",
+          "operator": "greater_than",
+          "value": 30000,
+          "weight": 25,
+          "mandatory": true
+        },
+        {
+          "id": "business_model",
+          "label": "Modèle économique structuré",
+          "field": "business_model",
+          "operator": "not_empty",
+          "value": null,
+          "weight": 20,
+          "mandatory": false
+        },
+        {
+          "id": "financial_plan",
+          "label": "Besoin financier clairement défini",
+          "field": "amountRequested",
+          "operator": "not_equals",
+          "value": "unknown",
+          "weight": 15,
+          "mandatory": false
+        },
+        {
+          "id": "revenue",
+          "label": "Début de traction commerciale",
+          "field": "revenue",
+          "operator": "not_equals",
+          "value": "0",
+          "weight": 10,
+          "mandatory": false
+        }
+      ],
+      "scoring": {
+        "threshold_eligible": 75,
+        "threshold_review": 55
+      },
+      "recommendations": {
+        "missing_innovation_verified": "Obtenir une labellisation innovation ou un avis technique favorable",
+        "missing_equity": "Lever des fonds propres (love money, business angels) avant de demander le prêt innovation",
+        "missing_business_model": "Structurer votre business model avec un prévisionnel financier sur 3 ans",
+        "missing_financial_plan": "Définir précisément votre besoin financier et son utilisation"
+      }
+    },
+    {
+      "id": "reseau-entreprendre",
+      "name": "Réseau Entreprendre",
+      "description": "Prêt d'honneur sans intérêt ni garantie, accompagné d'un mentor entrepreneur pendant 3 ans.",
+      "criteria": [
+        {
+          "id": "job_creation",
+          "label": "Potentiel de création d'emplois (minimum 3)",
+          "field": "jobsPlanned",
+          "operator": "greater_than_or_equal",
+          "value": 3,
+          "weight": 30,
+          "mandatory": true
+        },
+        {
+          "id": "strong_team",
+          "label": "Équipe solide et expérimentée",
+          "field": "team",
+          "operator": "not_empty",
+          "value": null,
+          "weight": 25,
+          "mandatory": true
+        },
+        {
+          "id": "growth_potential",
+          "label": "Fort potentiel de développement",
+          "field": "trlLevel",
+          "operator": "in",
+          "value": ["MVP lancé", "Premiers utilisateurs/clients", "Croissance initiale"],
+          "weight": 20,
+          "mandatory": false
+        },
+        {
+          "id": "amount_reasonable",
+          "label": "Montant demandé adapté (généralement 30K-50K€)",
+          "field": "amountRequested",
+          "operator": "between",
+          "value": [10000, 80000],
+          "weight": 15,
+          "mandatory": false
+        },
+        {
+          "id": "local_impact",
+          "label": "Impact économique territorial",
+          "field": "location",
+          "operator": "not_empty",
+          "value": null,
+          "weight": 10,
+          "mandatory": false
+        }
+      ],
+      "scoring": {
+        "threshold_eligible": 70,
+        "threshold_review": 50
+      },
+      "recommendations": {
+        "missing_job_creation": "Planifier la création d'au moins 3 emplois dans les 2 ans",
+        "missing_strong_team": "Renforcer votre équipe avec des profils complémentaires",
+        "missing_amount_reasonable": "Ajuster le montant demandé entre 30K€ et 50K€ pour maximiser vos chances",
+        "missing_local_impact": "Démontrer l'ancrage territorial et les partenariats locaux"
+      }
+    },
+    {
+      "id": "initiative-france",
+      "name": "Initiative France",
+      "description": "Prêt d'honneur pour créateurs et repreneurs d'entreprise, avec accompagnement personnalisé.",
+      "criteria": [
+        {
+          "id": "local_impact",
+          "label": "Impact économique local positif",
+          "field": "location",
+          "operator": "not_empty",
+          "value": null,
+          "weight": 25,
+          "mandatory": true
+        },
+        {
+          "id": "structured_project",
+          "label": "Projet structuré avec business plan",
+          "field": "business_model",
+          "operator": "not_empty",
+          "value": null,
+          "weight": 25,
+          "mandatory": true
+        },
+        {
+          "id": "job_creation",
+          "label": "Création d'emplois prévue",
+          "field": "jobsPlanned",
+          "operator": "greater_than",
+          "value": 0,
+          "weight": 20,
+          "mandatory": false
+        },
+        {
+          "id": "amount_adapted",
+          "label": "Montant adapté (généralement 5K-30K€)",
+          "field": "amountRequested",
+          "operator": "between",
+          "value": [3000, 50000],
+          "weight": 20,
+          "mandatory": false
+        },
+        {
+          "id": "personal_investment",
+          "label": "Investissement personnel démontré",
+          "field": "personalInvestment",
+          "operator": "greater_than",
+          "value": 0,
+          "weight": 10,
+          "mandatory": false
+        }
+      ],
+      "scoring": {
+        "threshold_eligible": 65,
+        "threshold_review": 45
+      },
+      "recommendations": {
+        "missing_local_impact": "Identifier et renforcer vos partenariats locaux",
+        "missing_structured_project": "Structurer un business plan détaillé avec prévisionnel financier",
+        "missing_amount_adapted": "Ajuster votre demande entre 5K€ et 30K€ selon votre projet",
+        "missing_personal_investment": "Démontrer votre investissement personnel dans le projet"
+      }
+    },
+    {
+      "id": "prets-bancaires-innovation",
+      "name": "Prêts Bancaires Innovation",
+      "description": "Financement bancaire classique adapté aux entreprises innovantes avec garanties BPI.",
+      "criteria": [
+        {
+          "id": "cash_flow",
+          "label": "Capacité de génération de cash-flow",
+          "field": "revenue",
+          "operator": "in",
+          "value": ["50k-200k", "200k-500k", ">500k"],
+          "weight": 30,
+          "mandatory": true
+        },
+        {
+          "id": "financial_history",
+          "label": "Historique financier (minimum 12 mois)",
+          "field": "incorporationDate",
+          "operator": "age_greater_than",
+          "value": 1,
+          "weight": 25,
+          "mandatory": true
+        },
+        {
+          "id": "guarantees",
+          "label": "Garanties disponibles ou garantie BPI",
+          "field": "personalInvestment",
+          "operator": "greater_than",
+          "value": 20000,
+          "weight": 20,
+          "mandatory": false
+        },
+        {
+          "id": "realistic_plan",
+          "label": "Plan financier réaliste et structuré",
+          "field": "financial_need",
+          "operator": "not_empty",
+          "value": null,
+          "weight": 15,
+          "mandatory": false
+        },
+        {
+          "id": "equity_ratio",
+          "label": "Ratio fonds propres/emprunt équilibré (30% FP minimum)",
+          "field": "personalInvestment",
+          "operator": "greater_than",
+          "value": 50000,
+          "weight": 10,
+          "mandatory": false
+        }
+      ],
+      "scoring": {
+        "threshold_eligible": 70,
+        "threshold_review": 50
+      },
+      "recommendations": {
+        "missing_cash_flow": "Développer votre chiffre d'affaires pour démontrer la capacité de remboursement",
+        "missing_financial_history": "Attendre d'avoir au moins 12-18 mois d'historique financier",
+        "missing_guarantees": "Obtenir une garantie Bpifrance (Garantie Innovation) ou apporter des garanties personnelles",
+        "missing_realistic_plan": "Structurer un prévisionnel financier réaliste sur 3-5 ans",
+        "missing_equity_ratio": "Renforcer les fonds propres pour atteindre au moins 30% du financement total"
+      }
+    }
+  ]
+}
