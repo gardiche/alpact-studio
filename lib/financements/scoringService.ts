@@ -78,8 +78,8 @@ const evaluateCriterion = (
       }
       break;
     case 'age_less_than':
-      if (fieldValue && fieldValue !== 'not-created') {
-        const incorporationDate = new Date(fieldValue);
+      if (fieldValue && String(fieldValue) !== 'not-created') {
+        const incorporationDate = new Date(String(fieldValue));
         const now = new Date();
         const ageInYears = (now.getTime() - incorporationDate.getTime()) / (1000 * 60 * 60 * 24 * 365);
         met = ageInYears < criterion.value;
@@ -88,8 +88,8 @@ const evaluateCriterion = (
       }
       break;
     case 'age_greater_than':
-      if (fieldValue && fieldValue !== 'not-created') {
-        const incorporationDate = new Date(fieldValue);
+      if (fieldValue && String(fieldValue) !== 'not-created') {
+        const incorporationDate = new Date(String(fieldValue));
         const now = new Date();
         const ageInYears = (now.getTime() - incorporationDate.getTime()) / (1000 * 60 * 60 * 24 * 365);
         met = ageInYears > criterion.value;
