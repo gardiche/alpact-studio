@@ -56,8 +56,8 @@ export default function UploadPage() {
       setProjectData(extractedProject);
       setQuestionnaireData(prev => ({ ...prev, ...extractedQuestionnaire }));
       router.push('/elyse/financements/extraction');
-    } catch (err: any) {
-      setError(err?.message || 'Erreur lors de l\'analyse du deck.');
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Erreur lors de l\'analyse du deck.');
     } finally {
       setIsLoading(false);
     }
