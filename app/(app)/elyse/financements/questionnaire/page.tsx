@@ -130,7 +130,7 @@ export default function QuestionnairePage() {
             Étape 2 sur 3
           </p>
           <h1 className="font-display font-bold text-[#111111]" style={{ fontSize: 'clamp(24px, 2.5vw, 36px)' }}>
-            Détails de l'entreprise
+            Détails de l&apos;entreprise
           </h1>
           {answeredCount > 0 && (
             <div className="inline-flex items-center gap-2 font-body text-[13px] text-[#1cb785] bg-[rgba(28,183,133,0.08)] rounded-full px-4 py-2">
@@ -211,7 +211,7 @@ export default function QuestionnairePage() {
 
           {currentQuestionIndex === 2 && (
             <div className="space-y-3">
-              <label className="font-display font-bold text-[20px] text-[#111111]">Secteur d'activité</label>
+              <label className="font-display font-bold text-[20px] text-[#111111]">Secteur d&apos;activité</label>
               <select name="sector" value={questionnaireData.sector} onChange={handleChange} className={selectClass}>
                 <option value="Agriculture et agroalimentaire">Agriculture et agroalimentaire</option>
                 <option value="Industrie">Industrie</option>
@@ -244,7 +244,7 @@ export default function QuestionnairePage() {
 
           {currentQuestionIndex === 4 && (
             <div className="space-y-3">
-              <label className="font-display font-bold text-[20px] text-[#111111]">Chiffre d'affaires actuel</label>
+              <label className="font-display font-bold text-[20px] text-[#111111]">Chiffre d&apos;affaires actuel</label>
               <select name="revenue" value={questionnaireData.revenue} onChange={handleChange} className={selectClass}>
                 <option value="0">0 €</option>
                 <option value="1-50k">1 – 50 000 €</option>
@@ -311,7 +311,7 @@ export default function QuestionnairePage() {
 
           {currentQuestionIndex === 8 && (
             <div className="space-y-3">
-              <label className="font-display font-bold text-[20px] text-[#111111]">Niveau d'innovation</label>
+              <label className="font-display font-bold text-[20px] text-[#111111]">Niveau d&apos;innovation</label>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {innovationOptions.map(opt => (
                   <button

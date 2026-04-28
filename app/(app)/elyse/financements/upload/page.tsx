@@ -105,8 +105,14 @@ export default function UploadPage() {
         >
           {isLoading ? (
             <div className="flex flex-col items-center gap-4 px-6 text-center">
-              {/* Spinner */}
-              <div className="w-10 h-10 rounded-full border-2 border-[#E4E0DB] border-t-[#111111] animate-spin" />
+              <video
+                src="/elyse-app/loader.mp4"
+                autoPlay
+                loop
+                muted
+                playsInline
+                className="w-48 h-48 object-contain"
+              />
               <p className="font-body font-semibold text-[16px] text-[#111111]">Analyse en cours</p>
               <p
                 className="font-body text-[13px] text-[#888888] transition-opacity duration-500"

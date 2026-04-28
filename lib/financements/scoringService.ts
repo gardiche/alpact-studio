@@ -35,7 +35,7 @@ const evaluateCriterion = (
   questionnaireData: QuestionnaireData
 ): EvaluationResult => {
   const field = criterion.field as keyof (ProjectData & QuestionnaireData);
-  let fieldValue: any;
+  let fieldValue: string | number | boolean | undefined;
 
   if (field in questionnaireData) {
     fieldValue = questionnaireData[field as keyof QuestionnaireData];

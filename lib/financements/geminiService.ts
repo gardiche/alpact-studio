@@ -91,7 +91,7 @@ export const parseDeck = async (
     });
 
     if (response.text) {
-      const extracted = JSON.parse(response.text);
+      const extracted: Record<string, string | number> = JSON.parse(response.text);
 
       const projectData: ProjectData = {
         summary: extracted.summary || '',
@@ -126,13 +126,14 @@ export const parseDeck = async (
       return { projectData, questionnaireData };
     }
     throw new Error('No response from AI');
-  } catch (error: any) {
-    if (error?.message?.includes('API key')) {
+  } catch (error: unknown) {
+    const msg = error instanceof Error ? error.message : String(error);
+    if (msg.includes('API key')) {
       throw new Error('Clé API Gemini invalide. Vérifiez vos variables d\'environnement.');
     }
-    if (error?.message?.includes('quota')) {
+    if (msg.includes('quota')) {
       throw new Error('Quota API dépassé. Attendez quelques minutes.');
     }
-    throw new Error(error?.message || 'Erreur lors de l\'analyse du deck');
+    throw new Error(msg || 'Erreur lors de l\'analyse du deck');
   }
 };
