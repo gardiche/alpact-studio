@@ -8,6 +8,7 @@ export async function middleware(request: NextRequest) {
   const isPublic =
     pathname.startsWith("/login") ||
     pathname.startsWith("/api/integrations/notion/callback") ||
+    pathname.startsWith("/api/astryd/sync") ||
     pathname.startsWith("/_next") ||
     pathname.startsWith("/favicon");
 
