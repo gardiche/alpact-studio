@@ -51,6 +51,38 @@ const HUB_METRICS = {
   runway_status: "warning",
   priorite: "Finaliser pitch deck",
   alertes: 2,
+  mrr_numeric: 13100,
+  mrr_previous: 12200,
+  arr: 157200,
+  ca_mensuel: 13100,
+  burn_rate: 9800,
+  runway_months: 7.8,
+  tresorerie: 84000,
+  capital_raised: 150000,
+  nb_clients: 12,
+  nb_prospects: 47,
+  headcount: 4,
+  churn_rate: 3.2,
+  nb_leads_mois: 23,
+  taux_conversion: 8.5,
+  prochaine_echeance: "Call investisseur 28 juin",
+  tool_signals: {
+    astryd: {
+      status: "active",
+      signal: "Pitch deck V2 en cours",
+      items: ["3 actions prioritaires cette semaine", "Call investisseur 28 juin"],
+    },
+    elyse: {
+      status: "warning",
+      signal: "Runway : 7,8 mois — sous le seuil",
+      items: ["Burn en hausse de 18% ce mois", "Échéance salaires dans 12j · 8 500 €"],
+    },
+    gyna: {
+      status: "active",
+      signal: "47 prospects contactés ce mois",
+      items: ["Warm outreach en cours", "À venir : brief freelance ads"],
+    },
+  },
 };
 
 const ACTIVITY = [
