@@ -187,7 +187,7 @@ const Nav = () => (
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           fontSize: 13, fontWeight: 600, color: '#fff', letterSpacing: '-0.3px'
         }}>TB</div>
-        <span style={{ fontSize: 14, fontWeight: 500, color: C.text }}>Thomas B.</span>
+        <span style={{ fontSize: 14, fontWeight: 500, color: C.text }}></span>
       </div>
     </div>
   </nav>
@@ -807,18 +807,7 @@ const LivrablesView = ({ onBack, userName, initials }) => {
 /* ══════════════════════════════════════════════
    DEMO NAV BADGE
 ══════════════════════════════════════════════ */
-const DemoBadge = () => (
-  <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12, color: '#888', fontFamily: 'DM Sans' }}>
-    <span>Données fictives · Démo Alpact Studio</span>
-    <span style={{ color: '#E4E0DB' }}>·</span>
-    <a href="https://calendly.com/tbo-alpact/30min?month=2026-04" target="_blank" rel="noopener noreferrer" style={{
-      color: '#fff', fontWeight: 600, textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 4,
-      background: C.violet, borderRadius: 999, padding: '3px 12px', fontSize: 11,
-    }}>
-      Prendre RDV →
-    </a>
-  </div>
-);
+const DemoBadge = () => null;
 
 /* ══════════════════════════════════════════════
    ÉCRAN DE SAISIE

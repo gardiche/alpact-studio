@@ -337,7 +337,7 @@ function Topbar() {
         <BellIcon />
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <Avatar />
-          <span style={{ fontFamily: 'DM Sans', fontSize: 14, fontWeight: 500, color: '#111' }}>Thomas B.</span>
+          <span style={{ fontFamily: 'DM Sans', fontSize: 14, fontWeight: 500, color: '#111' }}></span>
         </div>
       </div>
     </nav>
@@ -811,18 +811,7 @@ function ScenariosCard({ show }) {
 /* ── Landing ── */
 /* ── Demo Badge ── */
 function DemoBadge() {
-  return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12, color: '#888', fontFamily: 'DM Sans' }}>
-      <span>Données fictives · Démo Alpact Studio</span>
-      <span style={{ color: '#E4E0DB' }}>·</span>
-      <a href="https://calendly.com/tbo-alpact/30min?month=2026-04" target="_blank" rel="noopener noreferrer" style={{
-        color: '#fff', fontWeight: 600, textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 4,
-        background: '#1cb785', borderRadius: 999, padding: '3px 12px', fontSize: 11,
-      }}>
-        Prendre RDV →
-      </a>
-    </div>
-  );
+  return null;
 }
 
 /* ── Welcome Screen ── */
@@ -919,14 +908,14 @@ function Landing({ onSelect, userName }) {
         <span className="elyse-demodemo"><DemoBadge /></span>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <Avatar initials={userName ? userName.split(' ').map(n => n[0]).join('').toUpperCase().slice(0,2) : 'TB'} />
-          <span className="elyse-nav-user-name" style={{ fontFamily: 'DM Sans', fontSize: 14, fontWeight: 500, color: '#111' }}>{userName || 'Thomas B.'}</span>
+          <span className="elyse-nav-user-name" style={{ fontFamily: 'DM Sans', fontSize: 14, fontWeight: 500, color: '#111' }}>{userName || ''}</span>
         </div>
       </nav>
 
       <main className="elyse-landing-main" style={{ maxWidth: 820, margin: '0 auto', padding: '88px 40px 80px' }}>
         <div style={{ textAlign: 'center', marginBottom: 72 }} className="fade-up">
           <div className="elyse-landing-title" style={{ fontFamily: 'DM Serif Display', fontSize: 48, color: '#111', lineHeight: 1.1, marginBottom: 4 }}>
-            {new Date().getHours() >= 18 ? 'Bonsoir' : 'Bonjour'} {userName ? userName.split(' ')[0] : 'Thomas B.'}
+            {new Date().getHours() >= 18 ? 'Bonsoir' : 'Bonjour'} {userName ? userName.split(' ')[0] : ''}
           </div>
           <div style={{ display: 'flex', justifyContent: 'flex-end', paddingRight: '28%' }}>
             <img src="s1.svg" alt="" style={{ width: 180, marginTop: 2 }} />
@@ -1074,7 +1063,7 @@ function Livrables({ onBack, userName, initials }) {
         <span className="elyse-demodemo"><DemoBadge /></span>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <Avatar initials={initials} />
-          <span style={{ fontFamily: 'DM Sans', fontSize: 14, fontWeight: 500, color: '#111' }}>{userName || 'Thomas B.'}</span>
+          <span style={{ fontFamily: 'DM Sans', fontSize: 14, fontWeight: 500, color: '#111' }}>{userName || ''}</span>
         </div>
       </nav>
 
@@ -1168,7 +1157,7 @@ function App() {
           <BellIcon />
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
             <Avatar initials={initials} />
-            <span className="elyse-nav-user-name" style={{ fontFamily: 'DM Sans', fontSize: 14, fontWeight: 500, color: '#111' }}>{userName || 'Thomas B.'}</span>
+            <span className="elyse-nav-user-name" style={{ fontFamily: 'DM Sans', fontSize: 14, fontWeight: 500, color: '#111' }}>{userName || ''}</span>
           </div>
         </div>
       </nav>
