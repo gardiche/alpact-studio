@@ -508,6 +508,40 @@ async function seedEntrepreneur() {
   );
   if (nErr) throw new Error(`notifications: ${nErr.message}`);
 
+  // Astryd sync (données démo pour la ToolCard Astryd)
+  const { error: asErr } = await supabase.from("astryd_sync").upsert({
+    user_id: userId,
+    astryd_email: ENTREPRENEUR_EMAIL,
+    score_global: 72,
+    score_energie: 78,
+    score_temps: 55,
+    score_finances: 68,
+    score_soutien: 85,
+    score_competences: 80,
+    score_motivation: 90,
+    decision_state: "GO",
+    idea_title: "Alpact Studio",
+    idea_description: "Suite SaaS pour fondateurs",
+    maturity_score: 64,
+    maturity_progression: 12,
+    ready_score: 72,
+    active_micro_commitments: [
+      { text: "Finaliser pitch deck", objectif: "Levee", status: "in_progress", jauge_ciblee: "finances", due_date: "2026-06-10" },
+      { text: "Contacter 5 beta-testeurs", objectif: "Validation", status: "pending", jauge_ciblee: "soutien", due_date: "2026-06-08" },
+    ],
+    attention_zones: [
+      { label: "Temps disponible", niveau: "attention", explication: "Score temps bas (55%), risque de surcharge" },
+    ],
+    recent_checkins: [
+      { energy_level: 7, clarity_level: 8, mood_level: 7, created_at: hoursAgo(12) },
+      { energy_level: 6, clarity_level: 7, mood_level: 8, created_at: hoursAgo(36) },
+    ],
+    checkins_count: 14,
+    micro_actions_total: 23,
+    synced_at: new Date().toISOString(),
+  }, { onConflict: "user_id" });
+  if (asErr) throw new Error(`astryd_sync: ${asErr.message}`);
+
   console.log(`   🎯 Entrepreneur prêt : ${ENTREPRENEUR_EMAIL} / ${DEMO_PASSWORD}`);
 }
 

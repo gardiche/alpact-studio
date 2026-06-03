@@ -473,24 +473,8 @@ function buildToolSignals(metrics: ExtractedMetrics): Record<string, unknown> {
     items: gynaItems.slice(0, 2),
   };
 
-  // Astryd (Opérationnel)
-  const astrydItems: string[] = [];
-  if (metrics.priorite_active) {
-    astrydItems.push(`Priorité : ${metrics.priorite_active}`);
-  }
-  if (metrics.prochaine_echeance) {
-    astrydItems.push(`À venir : ${metrics.prochaine_echeance}`);
-  }
-  if (metrics.jalons_recents.length > 0) {
-    const lastJalon = metrics.jalons_recents[0];
-    astrydItems.push(`Jalon : ${lastJalon.titre} (${lastJalon.statut})`);
-  }
-
-  signals.astryd = {
-    status: "active" as const,
-    signal: metrics.priorite_active ?? "Projet en cours",
-    items: astrydItems.slice(0, 2),
-  };
+  // Astryd : signal géré directement par hubRepository depuis astryd_sync
+  // (Notion ne contient pas de données Astryd → pas de signal ici)
 
   return signals;
 }

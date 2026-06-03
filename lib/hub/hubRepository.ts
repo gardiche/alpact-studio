@@ -67,6 +67,111 @@ function relativeTime(dateStr: string): string {
 }
 
 // ============================================================
+// Astryd Signal Builder (source : astryd_sync, PAS Notion)
+// ============================================================
+
+async function buildAstrydSignalFromSync(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  userId: string
+): Promise<ToolSignal> {
+  const { data: rawData } = await supabase
+    .from("astryd_sync")
+    .select(
+      "score_global, decision_state, idea_title, maturity_score, " +
+      "active_micro_commitments, recent_checkins, attention_zones, " +
+      "ready_score, checkins_count, micro_actions_total, synced_at"
+    )
+    .eq("user_id", userId)
+    .single();
+
+  // Pas de données Astryd → signal d'attente
+  if (!rawData) {
+    return { status: "active", signal: "En attente de synchronisation Astryd", items: [] };
+  }
+
+  // Cast — les colonnes existent en DB (migration v2) mais ne sont pas dans le typegen
+  const data = rawData as Record<string, unknown>;
+
+  // ── Extraire les champs typés ──
+  const scoreGlobal = typeof data.score_global === "number" ? data.score_global : null;
+  const decisionState = typeof data.decision_state === "string" ? data.decision_state : null;
+  const ideaTitle = typeof data.idea_title === "string" ? data.idea_title : null;
+  const maturityScore = typeof data.maturity_score === "number" ? data.maturity_score : null;
+  const checkinsCount = typeof data.checkins_count === "number" ? data.checkins_count : 0;
+  const microActions = Array.isArray(data.active_micro_commitments)
+    ? (data.active_micro_commitments as { status: string }[])
+    : [];
+  const zones = Array.isArray(data.attention_zones)
+    ? (data.attention_zones as { label: string; niveau: string }[])
+    : [];
+
+  // ── Déterminer le signal principal ──
+  let status: ToolSignal["status"] = "active";
+  let signal = "Parcours en cours";
+  const items: string[] = [];
+
+  // 1. Score d'alignement global
+  if (scoreGlobal != null) {
+    if (scoreGlobal >= 70) {
+      signal = `Alignement : ${scoreGlobal}% — bonne trajectoire`;
+    } else if (scoreGlobal >= 50) {
+      status = "warning";
+      signal = `Alignement : ${scoreGlobal}% — points d'attention`;
+    } else {
+      status = "critical";
+      signal = `Alignement : ${scoreGlobal}% — action requise`;
+    }
+  }
+
+  // 2. Décision sur l'idée
+  if (decisionState) {
+    const decisionLabels: Record<string, string> = {
+      GO: "Décision : GO",
+      KEEP: "Décision : en réflexion",
+      PIVOT: "Décision : pivot envisagé",
+      STOP: "Décision : arrêt du projet",
+    };
+    items.push(decisionLabels[decisionState] ?? `Décision : ${decisionState}`);
+  }
+
+  // 3. Score de maturité
+  if (maturityScore != null) {
+    items.push(`Maturité : ${maturityScore}%`);
+  }
+
+  // 4. Micro-actions actives
+  if (microActions.length > 0) {
+    const pending = microActions.filter(
+      (a) => a.status === "pending" || a.status === "in_progress"
+    ).length;
+    if (pending > 0) {
+      items.push(`${pending} micro-action${pending > 1 ? "s" : ""} en cours`);
+    }
+  }
+
+  // 5. Zones d'attention critiques
+  if (zones.length > 0) {
+    const critiques = zones.filter((z) => z.niveau === "critique");
+    if (critiques.length > 0) {
+      if (status !== "critical") status = "warning";
+      items.push(`${critiques.length} zone${critiques.length > 1 ? "s" : ""} critique${critiques.length > 1 ? "s" : ""}`);
+    }
+  }
+
+  // 6. Check-ins
+  if (checkinsCount > 0) {
+    items.push(`${checkinsCount} check-in${checkinsCount > 1 ? "s" : ""}`);
+  }
+
+  // 7. Idée en cours
+  if (ideaTitle && items.length < 3) {
+    items.push(`Projet : ${ideaTitle}`);
+  }
+
+  return { status, signal, items: items.slice(0, 3) };
+}
+
+// ============================================================
 // Queries
 // ============================================================
 
@@ -75,11 +180,15 @@ export async function getHubMetrics(): Promise<HubMetrics> {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error("Non authentifié");
 
-  const { data } = await supabase
-    .from("hub_metrics")
-    .select("*")
-    .eq("user_id", user.id)
-    .single();
+  // Charger hub_metrics ET le signal Astryd en parallèle
+  const [{ data }, astrydSignal] = await Promise.all([
+    supabase
+      .from("hub_metrics")
+      .select("*")
+      .eq("user_id", user.id)
+      .single(),
+    buildAstrydSignalFromSync(supabase, user.id),
+  ]);
 
   if (!data) {
     // Fallback — pas de métriques encore
@@ -103,11 +212,18 @@ export async function getHubMetrics(): Promise<HubMetrics> {
       nbLeadsMois: null,
       tauxConversion: null,
       prochaineEcheance: null,
-      toolSignals: null,
+      toolSignals: { astryd: astrydSignal },
       lastExtractionAt: null,
       extractionConfidence: null,
     };
   }
+
+  // Fusionner : Astryd vient TOUJOURS de astryd_sync, jamais de Notion
+  const baseSignals = (data.tool_signals as Record<string, ToolSignal>) ?? {};
+  const mergedSignals: Record<string, ToolSignal> = {
+    ...baseSignals,
+    astryd: astrydSignal, // écrase toujours le signal Notion
+  };
 
   return {
     mrr: data.mrr ?? "—",
@@ -129,7 +245,7 @@ export async function getHubMetrics(): Promise<HubMetrics> {
     nbLeadsMois: data.nb_leads_mois ?? null,
     tauxConversion: data.taux_conversion ?? null,
     prochaineEcheance: data.prochaine_echeance ?? null,
-    toolSignals: data.tool_signals ?? null,
+    toolSignals: mergedSignals,
     lastExtractionAt: data.last_extraction_at ?? null,
     extractionConfidence: data.extraction_confidence ?? null,
   };
