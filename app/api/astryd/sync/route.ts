@@ -224,7 +224,7 @@ export async function POST(req: NextRequest) {
   if (payload.sessions_count !== undefined) syncData.sessions_count = payload.sessions_count;
   if (payload.checkins_count !== undefined) syncData.checkins_count = payload.checkins_count;
 
-  // 6. Upsert
+  // 6. Upsert astryd_sync
   const { error } = await supabase
     .from("astryd_sync")
     .upsert(syncData, { onConflict: "user_id" });
@@ -234,5 +234,98 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
+  // 7. Propager vers la vue cohorte (weather_signal depuis check-ins)
+  try {
+    await propagateToCohort(supabase, profile.id, payload);
+  } catch (e) {
+    // Non-bloquant — le sync principal a réussi
+    console.error("[astryd/sync] Cohort propagation error:", e);
+  }
+
   return NextResponse.json({ synced: true, user_id: profile.id });
+}
+
+// ============================================================
+// Propagation automatique vers la vue cohorte
+// ============================================================
+// Quand un entrepreneur sync ses données Astryd, on met à jour
+// automatiquement les signaux dans la vue structure (cohorte).
+
+function checkinToMood(checkin: {
+  energy_level: number;
+  clarity_level: number;
+  mood_level: number;
+}): "ensoleillé" | "nuageux" | "brumeux" | "orageux" {
+  const avg = (checkin.energy_level + checkin.clarity_level + checkin.mood_level) / 3;
+  if (avg >= 7) return "ensoleillé";
+  if (avg >= 5) return "nuageux";
+  if (avg >= 3) return "brumeux";
+  return "orageux";
+}
+
+function checkinToNote(checkin: {
+  energy_level: number;
+  clarity_level: number;
+  mood_level: number;
+}): string {
+  const parts: string[] = [];
+  if (checkin.energy_level >= 7) parts.push("énergie haute");
+  else if (checkin.energy_level <= 3) parts.push("énergie basse");
+  if (checkin.clarity_level >= 7) parts.push("bonne clarté");
+  else if (checkin.clarity_level <= 3) parts.push("manque de clarté");
+  if (checkin.mood_level >= 7) parts.push("moral positif");
+  else if (checkin.mood_level <= 3) parts.push("moral fragile");
+  if (parts.length === 0) return "Check-in Astryd";
+  return parts.join(", ").replace(/^./, (c) => c.toUpperCase());
+}
+
+async function propagateToCohort(
+  supabase: ReturnType<typeof createServerClient>,
+  userId: string,
+  payload: AstrydSyncPayload
+) {
+  // Trouver le cohort_member lié à ce user
+  const { data: member } = await supabase
+    .from("cohort_members")
+    .select("id")
+    .eq("user_id", userId)
+    .limit(1)
+    .single();
+
+  if (!member) return; // Pas dans une cohorte → rien à faire
+
+  // ── Weather signal depuis le dernier check-in ──
+  if (payload.recent_checkins && payload.recent_checkins.length > 0) {
+    const latest = payload.recent_checkins[0]; // Le plus récent
+    const mood = checkinToMood(latest);
+    const note = checkinToNote(latest);
+
+    await supabase.from("weather_signals").insert({
+      cohort_member_id: member.id,
+      mood,
+      note,
+    });
+  }
+
+  // ── Mettre à jour le status et last_active_at du member ──
+  const updates: Record<string, unknown> = {
+    last_active_at: new Date().toISOString(),
+    active_tool: "astryd",
+  };
+
+  // Mettre à jour le stage si on a une décision STOP → alerte
+  if (payload.decision_state === "STOP") {
+    updates.status = "alerte";
+    updates.alert_reason = "Décision d'arrêt du projet dans Astryd";
+  }
+
+  // Mettre à jour l'idée en cours
+  if (payload.idea_title) {
+    updates.current_milestone = payload.idea_title;
+  }
+
+  await supabase
+    .from("cohort_members")
+    .update(updates)
+    .eq("id", member.id);
 }
