@@ -319,10 +319,8 @@ async function propagateToCohort(
     updates.alert_reason = "Décision d'arrêt du projet dans Astryd";
   }
 
-  // Mettre à jour l'idée en cours
-  if (payload.idea_title) {
-    updates.current_milestone = payload.idea_title;
-  }
+  // Ne PAS écraser current_milestone avec idea_title
+  // (le milestone est géré manuellement par la structure)
 
   await supabase
     .from("cohort_members")
