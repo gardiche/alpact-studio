@@ -12,7 +12,7 @@ const defaultTools = [
     color: "#ff8f27",
     label: "Opérationnel",
     key: "astryd",
-    defaultSignal: { status: "active" as const, signal: "Connectez Notion pour voir vos données", items: [] },
+    defaultSignal: { status: "active" as const, signal: "En attente de données", items: [] },
   },
   {
     href: "/elyse",
@@ -21,7 +21,7 @@ const defaultTools = [
     color: "#1cb785",
     label: "Finance",
     key: "elyse",
-    defaultSignal: { status: "active" as const, signal: "Connectez Notion pour voir vos données", items: [] },
+    defaultSignal: { status: "active" as const, signal: "En attente de données", items: [] },
   },
   {
     href: "/gyna",
@@ -30,7 +30,7 @@ const defaultTools = [
     color: "#9d89fc",
     label: "GTM",
     key: "gyna",
-    defaultSignal: { status: "active" as const, signal: "Connectez Notion pour voir vos données", items: [] },
+    defaultSignal: { status: "active" as const, signal: "En attente de données", items: [] },
   },
 ];
 
