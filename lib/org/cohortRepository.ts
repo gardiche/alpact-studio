@@ -327,6 +327,68 @@ export async function getBaseImpactMetrics(): Promise<CohortImpactMetrics> {
 }
 
 // ============================================================
+// Astryd Sync Data (pour la vue détail d'un membre)
+// ============================================================
+
+export interface AstrydSyncData {
+  scoreGlobal: number | null;
+  scoreEnergie: number | null;
+  scoreTemps: number | null;
+  scoreFinances: number | null;
+  scoreSoutien: number | null;
+  scoreCompetences: number | null;
+  scoreMotivation: number | null;
+  decisionState: string | null;
+  ideaTitle: string | null;
+  maturityScore: number | null;
+  maturityProgression: number | null;
+  readyScore: number | null;
+  attentionZones: { label: string; niveau: string; explication: string }[];
+  activeMicroCommitments: { text: string; status: string; jauge_ciblee?: string; due_date?: string }[];
+  checkinsCount: number;
+  microActionsTotal: number;
+  syncedAt: string | null;
+}
+
+export async function getAstrydSyncForMember(userId: string | null): Promise<AstrydSyncData | null> {
+  if (!userId) return null;
+
+  const supabase = await createClient();
+  const { data: rawData } = await supabase
+    .from("astryd_sync")
+    .select("*")
+    .eq("user_id", userId)
+    .single();
+
+  if (!rawData) return null;
+  const d = rawData as Record<string, unknown>;
+
+  return {
+    scoreGlobal: typeof d.score_global === "number" ? d.score_global : null,
+    scoreEnergie: typeof d.score_energie === "number" ? d.score_energie : null,
+    scoreTemps: typeof d.score_temps === "number" ? d.score_temps : null,
+    scoreFinances: typeof d.score_finances === "number" ? d.score_finances : null,
+    scoreSoutien: typeof d.score_soutien === "number" ? d.score_soutien : null,
+    scoreCompetences: typeof d.score_competences === "number" ? d.score_competences : null,
+    scoreMotivation: typeof d.score_motivation === "number" ? d.score_motivation : null,
+    decisionState: typeof d.decision_state === "string" ? d.decision_state : null,
+    ideaTitle: typeof d.idea_title === "string" ? d.idea_title : null,
+    maturityScore: typeof d.maturity_score === "number" ? d.maturity_score : null,
+    maturityProgression: typeof d.maturity_progression === "number" ? d.maturity_progression : null,
+    readyScore: typeof d.ready_score === "number" ? d.ready_score : null,
+    attentionZones: Array.isArray(d.attention_zones)
+      ? (d.attention_zones as { label: string; niveau: string; explication: string }[])
+      : [],
+    activeMicroCommitments: Array.isArray(d.active_micro_commitments)
+      ? (d.active_micro_commitments as { text: string; status: string; jauge_ciblee?: string; due_date?: string }[])
+      : [],
+    checkinsCount: typeof d.checkins_count === "number" ? d.checkins_count : 0,
+    microActionsTotal: typeof d.micro_actions_total === "number" ? d.micro_actions_total : 0,
+    syncedAt: typeof d.synced_at === "string" ? d.synced_at : null,
+  };
+}
+
+// ============================================================
 // Mappers (DB row → TypeScript type)
 // ============================================================
 

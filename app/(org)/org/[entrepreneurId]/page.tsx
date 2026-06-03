@@ -4,7 +4,8 @@ import { MilestonesTimeline } from "@/components/org/MilestonesTimeline";
 import { ToolsUsage } from "@/components/org/ToolsUsage";
 import { AccompanistNotes } from "@/components/org/AccompanistNotes";
 import { SignalsTimeline } from "@/components/org/SignalsTimeline";
-import { getCohortMemberDetail } from "@/lib/org/cohortRepository";
+import { AstrydInsights } from "@/components/org/AstrydInsights";
+import { getCohortMemberDetail, getAstrydSyncForMember } from "@/lib/org/cohortRepository";
 
 export default async function EntrepreneurDetailPage({
   params,
@@ -14,6 +15,9 @@ export default async function EntrepreneurDetailPage({
   const { entrepreneurId } = await params;
   const member = await getCohortMemberDetail(entrepreneurId);
   if (!member) notFound();
+
+  // Charger les données Astryd si le membre est lié à un compte
+  const astrydData = await getAstrydSyncForMember(member.user_id || null);
 
   return (
     <div className="min-h-screen bg-bg p-8">
@@ -30,7 +34,8 @@ export default async function EntrepreneurDetailPage({
             <MilestonesTimeline milestones={member.milestones} />
             <AccompanistNotes notes={member.notes} />
           </div>
-          <div className="col-span-1">
+          <div className="col-span-1 space-y-4">
+            {astrydData && <AstrydInsights data={astrydData} />}
             <ToolsUsage tools={member.tools} />
           </div>
         </div>
