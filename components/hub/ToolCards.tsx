@@ -1,19 +1,18 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import type { HubMetrics, ToolSignal } from "@/lib/hub/hubRepository";
 
-const tools = [
+// Données par défaut quand pas de métriques extraites
+const defaultTools = [
   {
     href: "/astryd",
     logo: "/Astryd.png",
     logoHeight: "h-16",
     color: "#ff8f27",
     label: "Opérationnel",
-    signal: { status: "active", text: "Pitch deck V2 en cours" },
-    items: [
-      { icon: "→", text: "3 actions prioritaires cette semaine" },
-      { icon: "⏳", text: "À venir : call investisseur 28 avr." },
-    ],
+    key: "astryd",
+    defaultSignal: { status: "active" as const, signal: "Connectez Notion pour voir vos données", items: [] },
   },
   {
     href: "/elyse",
@@ -21,11 +20,8 @@ const tools = [
     logoHeight: "h-16",
     color: "#1cb785",
     label: "Finance",
-    signal: { status: "warning", text: "Runway : 7,8 mois — sous le seuil" },
-    items: [
-      { icon: "→", text: "Burn en hausse de 18% ce mois" },
-      { icon: "⏳", text: "Échéance salaires dans 12j · 8 500 €" },
-    ],
+    key: "elyse",
+    defaultSignal: { status: "active" as const, signal: "Connectez Notion pour voir vos données", items: [] },
   },
   {
     href: "/gyna",
@@ -33,11 +29,8 @@ const tools = [
     logoHeight: "h-16",
     color: "#9d89fc",
     label: "GTM",
-    signal: { status: "active", text: "Warm outreach en cours" },
-    items: [
-      { icon: "→", text: "47 prospects contactés ce mois" },
-      { icon: "⏳", text: "À venir : brief freelance ads" },
-    ],
+    key: "gyna",
+    defaultSignal: { status: "active" as const, signal: "Connectez Notion pour voir vos données", items: [] },
   },
 ];
 
@@ -47,14 +40,18 @@ const signalColor = {
   critical: "#ff4f3f",
 };
 
-export function ToolCards() {
+export function ToolCards({ metrics }: { metrics?: HubMetrics }) {
   const router = useRouter();
+  const toolSignals = metrics?.toolSignals ?? null;
 
   return (
     <div className="grid grid-cols-3 gap-4 mb-8">
-      {tools.map((tool) => {
-        const { href, logo, logoHeight, color, label, signal, items } = tool;
-        const dot = signalColor[signal.status as keyof typeof signalColor];
+      {defaultTools.map((tool) => {
+        const { href, logo, logoHeight, color, label, key, defaultSignal } = tool;
+
+        // Utiliser les signaux extraits si disponibles, sinon les défauts
+        const signal: ToolSignal = (toolSignals?.[key] as ToolSignal) ?? defaultSignal;
+        const dot = signalColor[signal.status];
 
         return (
           <div
@@ -78,19 +75,21 @@ export function ToolCards() {
                 style={{ background: dot }}
               />
               <span className="font-sans text-sm font-semibold text-fg leading-snug">
-                {signal.text}
+                {signal.signal}
               </span>
             </div>
 
             {/* Items */}
-            <div className="flex flex-col gap-2 border-t border-border pt-3">
-              {items.map((item, i) => (
-                <div key={i} className="flex items-start gap-2">
-                  <span className="text-muted text-xs mt-0.5 flex-shrink-0">{item.icon}</span>
-                  <span className="font-sans text-xs text-muted leading-snug">{item.text}</span>
-                </div>
-              ))}
-            </div>
+            {signal.items.length > 0 && (
+              <div className="flex flex-col gap-2 border-t border-border pt-3">
+                {signal.items.map((item, i) => (
+                  <div key={i} className="flex items-start gap-2">
+                    <span className="text-muted text-xs mt-0.5 flex-shrink-0">→</span>
+                    <span className="font-sans text-xs text-muted leading-snug">{item}</span>
+                  </div>
+                ))}
+              </div>
+            )}
 
             {/* CTA */}
             <div className="mt-auto">

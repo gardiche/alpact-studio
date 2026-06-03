@@ -15,7 +15,7 @@ export default async function HubPage() {
       <div className="max-w-6xl mx-auto">
         <HubHeader />
         <PulseCards metrics={metrics} />
-        <ToolCards />
+        <ToolCards metrics={metrics} />
         <ActivityFeed items={activity} />
       </div>
     </div>

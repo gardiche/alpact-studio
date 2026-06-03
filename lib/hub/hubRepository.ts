@@ -14,6 +14,29 @@ export interface HubMetrics {
   runwayStatus: "ok" | "warning" | "critical";
   priorite: string;
   alertes: number;
+  // Données numériques enrichies (depuis Notion metrics extraction)
+  mrrNumeric: number | null;
+  arrNumeric: number | null;
+  burnRate: number | null;
+  runwayMonths: number | null;
+  tresorerie: number | null;
+  capitalRaised: number | null;
+  nbClients: number | null;
+  nbProspects: number | null;
+  headcount: number | null;
+  churnRate: number | null;
+  nbLeadsMois: number | null;
+  tauxConversion: number | null;
+  prochaineEcheance: string | null;
+  toolSignals: Record<string, ToolSignal> | null;
+  lastExtractionAt: string | null;
+  extractionConfidence: number | null;
+}
+
+export interface ToolSignal {
+  status: "active" | "warning" | "critical";
+  signal: string;
+  items: string[];
 }
 
 export interface ActivityItem {
@@ -67,6 +90,22 @@ export async function getHubMetrics(): Promise<HubMetrics> {
       runwayStatus: "ok",
       priorite: "—",
       alertes: 0,
+      mrrNumeric: null,
+      arrNumeric: null,
+      burnRate: null,
+      runwayMonths: null,
+      tresorerie: null,
+      capitalRaised: null,
+      nbClients: null,
+      nbProspects: null,
+      headcount: null,
+      churnRate: null,
+      nbLeadsMois: null,
+      tauxConversion: null,
+      prochaineEcheance: null,
+      toolSignals: null,
+      lastExtractionAt: null,
+      extractionConfidence: null,
     };
   }
 
@@ -77,6 +116,22 @@ export async function getHubMetrics(): Promise<HubMetrics> {
     runwayStatus: data.runway_status ?? "ok",
     priorite: data.priorite ?? "—",
     alertes: data.alertes ?? 0,
+    mrrNumeric: data.mrr_numeric ?? null,
+    arrNumeric: data.arr ?? null,
+    burnRate: data.burn_rate ?? null,
+    runwayMonths: data.runway_months ?? null,
+    tresorerie: data.tresorerie ?? null,
+    capitalRaised: data.capital_raised ?? null,
+    nbClients: data.nb_clients ?? null,
+    nbProspects: data.nb_prospects ?? null,
+    headcount: data.headcount ?? null,
+    churnRate: data.churn_rate ?? null,
+    nbLeadsMois: data.nb_leads_mois ?? null,
+    tauxConversion: data.taux_conversion ?? null,
+    prochaineEcheance: data.prochaine_echeance ?? null,
+    toolSignals: data.tool_signals ?? null,
+    lastExtractionAt: data.last_extraction_at ?? null,
+    extractionConfidence: data.extraction_confidence ?? null,
   };
 }
 

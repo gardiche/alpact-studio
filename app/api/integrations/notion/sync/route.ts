@@ -11,6 +11,7 @@ import {
   saveSnapshot,
 } from "@/lib/integrations/notion/storage";
 import { getOrCreateDigest } from "@/lib/integrations/notion/digest";
+import { extractAndSaveMetrics } from "@/lib/integrations/notion/metricsExtractor";
 import { ensureUserId } from "@/lib/integrations/notion/session";
 import type { NotionContextPage } from "@/types/integrations";
 
@@ -105,13 +106,25 @@ export async function POST(req: NextRequest) {
 
     // On tente la génération mais on ne bloque pas la réponse
     let digestGenerated = false;
-    try {
-      if (process.env.ANTHROPIC_API_KEY && process.env.ANTHROPIC_API_KEY !== "sk-ant-placeholder") {
+    let metricsExtracted = false;
+    const hasAnthropicKey = process.env.ANTHROPIC_API_KEY && process.env.ANTHROPIC_API_KEY !== "sk-ant-placeholder";
+
+    if (hasAnthropicKey) {
+      // Digest contextuel (qualitative)
+      try {
         await getOrCreateDigest(userId, snapshot);
         digestGenerated = true;
+      } catch (digestErr) {
+        console.warn("[sync] Digest generation failed (non-blocking):", digestErr);
       }
-    } catch (digestErr) {
-      console.warn("[sync] Digest generation failed (non-blocking):", digestErr);
+
+      // Extraction des métriques business (quantitatif)
+      try {
+        await extractAndSaveMetrics(userId, snapshot);
+        metricsExtracted = true;
+      } catch (metricsErr) {
+        console.warn("[sync] Metrics extraction failed (non-blocking):", metricsErr);
+      }
     }
 
     return NextResponse.json({
@@ -120,6 +133,7 @@ export async function POST(req: NextRequest) {
       total_chars,
       synced_at: syncedAt,
       digest_generated: digestGenerated,
+      metrics_extracted: metricsExtracted,
     });
   } catch (err) {
     const message = err instanceof Error ? err.message : "unknown_error";
