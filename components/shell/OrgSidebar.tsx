@@ -60,7 +60,7 @@ export function OrgSidebar() {
           <div className="mt-3 px-1">
             <div className="font-serif text-lg text-fg leading-tight">{org.name}</div>
             <div className="font-sans text-[11px] text-muted capitalize mt-0.5">
-              {org.type} · {org.city}
+              {org.city ?? org.type}
             </div>
           </div>
         )}
