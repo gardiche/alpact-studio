@@ -149,9 +149,15 @@ async function buildAstrydSignalFromSync(
     }
   }
 
-  // 5. Zones d'attention critiques
+  // 5. Zones d'attention critiques (dédupliquées par label)
   if (zones.length > 0) {
-    const critiques = zones.filter((z) => z.niveau === "critique");
+    const seenLabels = new Set<string>();
+    const uniqueZones = zones.filter((z) => {
+      if (seenLabels.has(z.label)) return false;
+      seenLabels.add(z.label);
+      return true;
+    });
+    const critiques = uniqueZones.filter((z) => z.niveau === "critique");
     if (critiques.length > 0) {
       if (status !== "critical") status = "warning";
       items.push(`${critiques.length} zone${critiques.length > 1 ? "s" : ""} critique${critiques.length > 1 ? "s" : ""}`);

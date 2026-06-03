@@ -59,9 +59,15 @@ export function AstrydInsights({ data }: { data: AstrydSyncData }) {
   const pendingActions = data.activeMicroCommitments.filter(
     (a) => a.status === "pending" || a.status === "in_progress" || a.status === "todo"
   );
-  const criticalZones = data.attentionZones.filter(
-    (z) => z.niveau === "critique" || z.niveau === "attention"
-  );
+  // Dédupliquer par label (Astryd peut générer des doublons)
+  const seenLabels = new Set<string>();
+  const criticalZones = data.attentionZones
+    .filter((z) => z.niveau === "critique" || z.niveau === "attention")
+    .filter((z) => {
+      if (seenLabels.has(z.label)) return false;
+      seenLabels.add(z.label);
+      return true;
+    });
 
   return (
     <div className="bg-surface rounded-card shadow-card p-5 border-l-3" style={{ borderLeftColor: "#ff8f27" }}>
