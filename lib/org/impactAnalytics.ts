@@ -75,7 +75,7 @@ export function computeStageEvolution(members: CohortMember[]): StageEvolution {
     };
   });
   const members_progressed = members.filter(
-    (m) => stageRank(m.stage) > stageRank(m.initial_stage)
+    (m) => m.initial_stage && stageRank(m.stage) > stageRank(m.initial_stage)
   ).length;
   const members_progressed_pct =
     members.length === 0 ? 0 : Math.round((members_progressed / members.length) * 100);
@@ -121,7 +121,7 @@ export function computeMilestonesByCategory(details: CohortMemberDetail[]): Mile
 function scoreJourney(d: CohortMemberDetail): number {
   let score = 0;
   // Progression de stade
-  score += (stageRank(d.stage) - stageRank(d.initial_stage)) * 10;
+  score += d.initial_stage ? (stageRank(d.stage) - stageRank(d.initial_stage)) * 10 : 0;
   // Jalons franchis
   score += d.milestones.filter((m) => m.status === "franchi").length * 4;
   // Capital levé (bonus pour visibilité)
@@ -143,9 +143,9 @@ function formatCapital(amount: number): string {
 function buildHeadline(d: CohortMemberDetail): string {
   const parts: string[] = [];
 
-  const progressed = stageRank(d.stage) > stageRank(d.initial_stage);
+  const progressed = d.initial_stage && stageRank(d.stage) > stageRank(d.initial_stage);
   if (progressed) {
-    parts.push(`passé de ${STAGE_LABEL[d.initial_stage].toLowerCase()} à ${STAGE_LABEL[d.stage].toLowerCase()}`);
+    parts.push(`passé de ${STAGE_LABEL[d.initial_stage!].toLowerCase()} à ${STAGE_LABEL[d.stage].toLowerCase()}`);
   }
   if (d.capital_raised >= 100_000) {
     parts.push(`${formatCapital(d.capital_raised)} levés`);

@@ -103,7 +103,7 @@ export function ImpactExportButton(props: Props) {
     L.push("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
     members.forEach((m) => {
       L.push(`• ${m.first_name} ${m.last_name} — ${m.project_name} (${m.sector})`);
-      L.push(`  Stade : ${m.initial_stage} → ${m.stage} · Statut : ${m.status} · Équipe : ${m.headcount}`);
+      L.push(`  Stade : ${m.initial_stage ?? "—"} → ${m.stage} · Statut : ${m.status} · Équipe : ${m.headcount}`);
       L.push(`  Capital levé : ${formatEuro(m.capital_raised)} · CA annuel : ${formatEuro(m.revenue_yearly)}`);
       if (m.current_milestone) L.push(`  Jalon en cours : ${m.current_milestone}`);
       if (m.alert_reason) L.push(`  ⚠ ${m.alert_reason}`);

@@ -47,7 +47,7 @@ export function HighlightedJourneys({ journeys }: Props) {
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {journeys.map((j) => {
-          const progressed = j.initial_stage !== j.current_stage;
+          const progressed = j.initial_stage != null && j.initial_stage !== j.current_stage;
           return (
             <Link
               key={j.member_id}
@@ -73,7 +73,7 @@ export function HighlightedJourneys({ journeys }: Props) {
               {progressed && (
                 <div className="inline-flex items-center gap-1.5 self-start px-2.5 py-1 rounded-full bg-surface border border-border">
                   <span className="font-sans text-[10px] text-muted">
-                    {STAGE_SHORT[j.initial_stage]}
+                    {STAGE_SHORT[j.initial_stage!]}
                   </span>
                   <span className="font-sans text-[10px] text-muted">→</span>
                   <span

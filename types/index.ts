@@ -111,7 +111,7 @@ export interface CohortMember {
   project_description: string;
   sector: string;
   stage: EntrepreneurStage;
-  initial_stage: EntrepreneurStage;
+  initial_stage: EntrepreneurStage | null;
   team_size: number;
   status: EntrepreneurStatus;
   last_active_at: string;
@@ -262,7 +262,7 @@ export interface HighlightedJourney {
   last_name: string;
   project_name: string;
   headline: string;          // phrase synthèse auto-générée
-  initial_stage: EntrepreneurStage;
+  initial_stage: EntrepreneurStage | null;
   current_stage: EntrepreneurStage;
   key_milestones: { title: string; reached_at: string }[];
   verbatim: string | null;   // citation issue des notes
