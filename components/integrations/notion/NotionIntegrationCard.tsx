@@ -33,6 +33,30 @@ interface Props {
   initialError?: string | null;
 }
 
+function normalizeError(error: string): string {
+  try {
+    const decoded = decodeURIComponent(error);
+    if (decoded === "state_mismatch") {
+      return "La session de connexion Notion a expiré ou le retour OAuth ne vient pas du même navigateur. Relance la connexion depuis Alpact.";
+    }
+    if (decoded === "missing_params") {
+      return "Notion n'a pas renvoyé les paramètres de connexion attendus. Relance la connexion.";
+    }
+    if (decoded.includes("Configuration Notion")) {
+      return "La configuration Notion locale est incomplète. Vérifie les variables NOTION_CLIENT_ID, NOTION_CLIENT_SECRET et NOTION_REDIRECT_URI.";
+    }
+    if (decoded.includes("Notion token exchange failed")) {
+      return `${decoded} Vérifie surtout que l'URL de redirection Notion correspond exactement à celle de .env.local.`;
+    }
+    if (decoded.includes("authentifi")) {
+      return "Ta session Alpact n'est plus active. Reconnecte-toi à Alpact, puis relance la connexion Notion.";
+    }
+    return decoded;
+  } catch {
+    return error;
+  }
+}
+
 export function NotionIntegrationCard({ initialError }: Props) {
   const [status, setStatus] = useState<StatusResponse | null>(null);
   const [loading, setLoading] = useState(true);
@@ -108,7 +132,7 @@ export function NotionIntegrationCard({ initialError }: Props) {
             <div className="mb-3 flex items-start gap-2 p-2 rounded-lg bg-red/5 border border-red/20">
               <AlertCircle size={12} className="text-red flex-shrink-0 mt-0.5" />
               <p className="font-sans text-[11px] text-red leading-snug">
-                Erreur Notion : {decodeURIComponent(error)}
+                Erreur Notion : {normalizeError(error)}
               </p>
             </div>
           )}

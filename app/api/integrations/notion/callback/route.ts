@@ -1,8 +1,4 @@
-// Callback OAuth Notion :
-// 1. vérifie le state CSRF
-// 2. échange le code contre un access_token
-// 3. sauvegarde l'intégration
-// 4. redirige vers /integrations/notion (page de sélection des pages)
+// Handles the Notion OAuth callback and stores the encrypted token.
 
 import { NextRequest, NextResponse } from "next/server";
 import { exchangeCodeForToken } from "@/lib/integrations/notion/oauth";
@@ -17,21 +13,42 @@ function errorRedirect(req: NextRequest, reason: string) {
   return NextResponse.redirect(url);
 }
 
+function getRedirectUri(req: NextRequest): string {
+  return new URL("/api/integrations/notion/callback", req.nextUrl.origin).toString();
+}
+
 export async function GET(req: NextRequest) {
   const code = req.nextUrl.searchParams.get("code");
   const state = req.nextUrl.searchParams.get("state");
   const error = req.nextUrl.searchParams.get("error");
-
-  if (error) return errorRedirect(req, error);
-  if (!code || !state) return errorRedirect(req, "missing_params");
-
   const storedState = req.cookies.get("alpact_notion_oauth_state")?.value;
+
+  if (error) {
+    console.error("[notion/callback] Notion returned an OAuth error", { error });
+    return errorRedirect(req, error);
+  }
+
+  if (!code || !state) {
+    console.error("[notion/callback] Missing OAuth params", {
+      hasCode: Boolean(code),
+      hasState: Boolean(state),
+    });
+    return errorRedirect(req, "missing_params");
+  }
+
   if (!storedState || storedState !== state) {
+    console.error("[notion/callback] OAuth state mismatch", {
+      hasStoredState: Boolean(storedState),
+      hasReturnedState: Boolean(state),
+    });
     return errorRedirect(req, "state_mismatch");
   }
 
   try {
-    const token = await exchangeCodeForToken(code);
+    const redirectUri = getRedirectUri(req);
+    console.info("[notion/callback] Exchanging OAuth code", { redirectUri });
+
+    const token = await exchangeCodeForToken(code, redirectUri);
     const userId = await ensureUserId();
 
     await saveIntegration({
@@ -51,11 +68,11 @@ export async function GET(req: NextRequest) {
     const successUrl = new URL("/integrations/notion", req.url);
     successUrl.searchParams.set("just_connected", "1");
     const response = NextResponse.redirect(successUrl);
-    // nettoyer le cookie de state
     response.cookies.delete("alpact_notion_oauth_state");
     return response;
   } catch (err) {
     const message = err instanceof Error ? err.message : "unknown_error";
-    return errorRedirect(req, encodeURIComponent(message).slice(0, 120));
+    console.error("[notion/callback] OAuth callback failed", { message });
+    return errorRedirect(req, message.slice(0, 300));
   }
 }

@@ -16,13 +16,13 @@ function getConfig() {
   return { clientId, clientSecret, redirectUri };
 }
 
-export function buildAuthUrl(state: string): string {
+export function buildAuthUrl(state: string, redirectUriOverride?: string): string {
   const { clientId, redirectUri } = getConfig();
   const url = new URL(NOTION_AUTH_URL);
   url.searchParams.set("client_id", clientId);
   url.searchParams.set("response_type", "code");
   url.searchParams.set("owner", "user");
-  url.searchParams.set("redirect_uri", redirectUri);
+  url.searchParams.set("redirect_uri", redirectUriOverride ?? redirectUri);
   url.searchParams.set("state", state);
   return url.toString();
 }
@@ -48,7 +48,10 @@ export interface NotionTokenResponse {
   duplicated_template_id: string | null;
 }
 
-export async function exchangeCodeForToken(code: string): Promise<NotionTokenResponse> {
+export async function exchangeCodeForToken(
+  code: string,
+  redirectUriOverride?: string
+): Promise<NotionTokenResponse> {
   const { clientId, clientSecret, redirectUri } = getConfig();
   const credentials = Buffer.from(`${clientId}:${clientSecret}`).toString("base64");
 
@@ -62,7 +65,7 @@ export async function exchangeCodeForToken(code: string): Promise<NotionTokenRes
     body: JSON.stringify({
       grant_type: "authorization_code",
       code,
-      redirect_uri: redirectUri,
+      redirect_uri: redirectUriOverride ?? redirectUri,
     }),
   });
 
