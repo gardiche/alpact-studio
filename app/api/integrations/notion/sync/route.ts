@@ -1,6 +1,6 @@
 // POST /api/integrations/notion/sync
-// Body: { selected_page_ids: string[], page_titles: Record<id, title> }
-// Sauvegarde la sélection, extrait le contenu, sauvegarde un snapshot.
+// Body: { selected_pages: { id, title, url, last_edited_time }[] }
+// Sauvegarde la selection, extrait le contenu, cree un snapshot, puis met a jour le Hub.
 
 import { NextRequest, NextResponse } from "next/server";
 import { extractPageContent } from "@/lib/integrations/notion/client";
@@ -13,7 +13,7 @@ import {
 import { getOrCreateDigest } from "@/lib/integrations/notion/digest";
 import { extractAndSaveMetrics } from "@/lib/integrations/notion/metricsExtractor";
 import { ensureUserId } from "@/lib/integrations/notion/session";
-import type { NotionContextPage } from "@/types/integrations";
+import type { NotionContextPage, NotionContextSnapshot } from "@/types/integrations";
 
 export const runtime = "nodejs";
 
@@ -39,21 +39,18 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "selected_pages_required" }, { status: 400 });
   }
 
-  // Sauvegarder la sélection (utilisée par /pages au prochain affichage)
   await saveSelectedPages(
     userId,
     body.selected_pages.map((p) => ({ page_id: p.id, title: p.title, selected: true }))
   );
 
   try {
-    // Extraire le contenu de chaque page sélectionnée (en parallèle, mais on
-    // limite à 5 simultanées pour éviter de cogner le rate limit Notion : 3 req/s)
     const extracted: NotionContextPage[] = [];
     const queue = [...body.selected_pages];
-    const BATCH = 3;
+    const batchSize = 3;
 
     while (queue.length > 0) {
-      const batch = queue.splice(0, BATCH);
+      const batch = queue.splice(0, batchSize);
       const contents = await Promise.all(
         batch.map(async (p) => {
           try {
@@ -66,7 +63,6 @@ export async function POST(req: NextRequest) {
               last_edited_time: p.last_edited_time,
             } satisfies NotionContextPage;
           } catch (err) {
-            // On garde l'erreur dans le contexte plutôt que de tout faire échouer
             const message = err instanceof Error ? err.message : "extraction_error";
             return {
               page_id: p.id,
@@ -83,20 +79,7 @@ export async function POST(req: NextRequest) {
 
     const total_chars = extracted.reduce((sum, p) => sum + p.content.length, 0);
     const syncedAt = new Date().toISOString();
-
-    await saveSnapshot({
-      user_id: userId,
-      workspace_id: integration.workspace_id,
-      pages: extracted,
-      total_chars,
-      synced_at: syncedAt,
-    });
-
-    await saveIntegration({ ...integration, last_synced_at: syncedAt });
-
-    // Générer le digest contextuel en arrière-plan
-    // (ne bloque pas la réponse sync — le digest sera prêt pour le prochain appel copilot)
-    const snapshot = {
+    const snapshot: NotionContextSnapshot = {
       user_id: userId,
       workspace_id: integration.workspace_id,
       pages: extracted,
@@ -104,27 +87,30 @@ export async function POST(req: NextRequest) {
       synced_at: syncedAt,
     };
 
-    // On tente la génération mais on ne bloque pas la réponse
+    const snapshotId = await saveSnapshot(snapshot);
+    await saveIntegration({ ...integration, last_synced_at: syncedAt });
+
     let digestGenerated = false;
     let metricsExtracted = false;
-    const hasAnthropicKey = process.env.ANTHROPIC_API_KEY && process.env.ANTHROPIC_API_KEY !== "sk-ant-placeholder";
+    let metricsError: string | null = null;
+    const hasAnthropicKey =
+      Boolean(process.env.ANTHROPIC_API_KEY) && process.env.ANTHROPIC_API_KEY !== "sk-ant-placeholder";
 
     if (hasAnthropicKey) {
-      // Digest contextuel (qualitative)
       try {
         await getOrCreateDigest(userId, snapshot);
         digestGenerated = true;
       } catch (digestErr) {
         console.warn("[sync] Digest generation failed (non-blocking):", digestErr);
       }
+    }
 
-      // Extraction des métriques business (quantitatif)
-      try {
-        await extractAndSaveMetrics(userId, snapshot);
-        metricsExtracted = true;
-      } catch (metricsErr) {
-        console.warn("[sync] Metrics extraction failed (non-blocking):", metricsErr);
-      }
+    try {
+      await extractAndSaveMetrics(userId, snapshot, snapshotId);
+      metricsExtracted = true;
+    } catch (err) {
+      metricsError = err instanceof Error ? err.message : "metrics_extraction_failed";
+      console.warn("[sync] Metrics extraction failed (non-blocking):", err);
     }
 
     return NextResponse.json({
@@ -134,6 +120,7 @@ export async function POST(req: NextRequest) {
       synced_at: syncedAt,
       digest_generated: digestGenerated,
       metrics_extracted: metricsExtracted,
+      metrics_error: metricsError,
     });
   } catch (err) {
     const message = err instanceof Error ? err.message : "unknown_error";

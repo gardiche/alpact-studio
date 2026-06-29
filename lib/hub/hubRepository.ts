@@ -90,7 +90,7 @@ async function buildAstrydSignalFromSync(
   }
 
   // Cast — les colonnes existent en DB (migration v2) mais ne sont pas dans le typegen
-  const data = rawData as Record<string, unknown>;
+  const data = rawData as unknown as Record<string, unknown>;
 
   // ── Extraire les champs typés ──
   const scoreGlobal = typeof data.score_global === "number" ? data.score_global : null;

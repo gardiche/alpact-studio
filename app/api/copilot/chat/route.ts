@@ -1,4 +1,4 @@
-import { anthropic } from "@/lib/anthropic/client";
+import { ANTHROPIC_MODEL, anthropic } from "@/lib/anthropic/client";
 import { buildSystemPrompt } from "@/lib/anthropic/prompts";
 import { getNotionContextForPrompt } from "@/lib/integrations/notion/digest";
 import { createClient } from "@/lib/supabase/server";
@@ -34,9 +34,14 @@ export async function POST(request: NextRequest) {
     first_name: profile?.first_name ?? "",
     last_name: profile?.last_name ?? "",
     project_name: entrepreneurProfile?.project_name ?? "",
+    project_description: entrepreneurProfile?.project_description ?? "",
     stage: entrepreneurProfile?.stage ?? "",
     sector: entrepreneurProfile?.sector ?? "",
     team_size: entrepreneurProfile?.team_size ?? 1,
+    founded_at: entrepreneurProfile?.founded_at ?? "",
+    avatar_url: profile?.avatar_url ?? "",
+    created_at: profile?.created_at ?? new Date().toISOString(),
+    updated_at: profile?.updated_at ?? new Date().toISOString(),
   };
 
   const body = await request.json();
@@ -63,7 +68,7 @@ export async function POST(request: NextRequest) {
     async start(controller) {
       try {
         const anthropicStream = anthropic.messages.stream({
-          model: "claude-sonnet-4-20250514",
+          model: ANTHROPIC_MODEL,
           max_tokens: 1000,
           system: systemPrompt,
           messages: messages.slice(-10).map((m: { role: string; content: string }) => ({

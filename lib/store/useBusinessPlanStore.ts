@@ -9,8 +9,11 @@ import type {
   TeamMemberForm,
   FixedCostForm,
   VariableCostForm,
+  InvestmentForm,
+  SubsidyForm,
   TreasuryForm,
   BpContextForm,
+  LegalForm,
   Project,
 } from "@/types/business-plan";
 
@@ -21,7 +24,6 @@ function defaultTreasury(): TreasuryForm {
     fundraising_date: null,
     has_loans: false,
     outstanding_loans: [],
-    pending_grants: null,
     accounts_receivable: null,
     payment_delay_clients_days: 30,
     payment_delay_suppliers_days: 30,
@@ -34,6 +36,15 @@ function defaultBpContext(): BpContextForm {
     target_audience: undefined,
     funding_amount_requested: null,
     funding_usage: "",
+    founder_contribution: null,
+    capital_social: null,
+    associate_current_account: null,
+    bank_loan_amount: null,
+    loan_duration_months: 60,
+    annual_interest_rate: 4.5,
+    deferment_months: 0,
+    working_capital_buffer: null,
+    vat_rate: 20,
     deadline: null,
     market_context: "",
     competitive_advantage: "",
@@ -47,7 +58,7 @@ interface BusinessPlanStore extends WizardState {
   markBlockComplete: (block: number) => void;
 
   // Project
-  setProject: (fields: Partial<Pick<WizardState, "projectName" | "projectDescription" | "businessType" | "stage">>) => void;
+  setProject: (fields: Partial<Pick<WizardState, "projectName" | "projectDescription" | "businessType" | "stage" | "isCreated" | "legalForm" | "startDate">>) => void;
 
   // Revenue lines
   addRevenueLine: (line: RevenueLineForm) => void;
@@ -73,6 +84,16 @@ interface BusinessPlanStore extends WizardState {
   updateVariableCost: (id: string, fields: Partial<VariableCostForm>) => void;
   removeVariableCost: (id: string) => void;
 
+  // Investments
+  addInvestment: (inv: InvestmentForm) => void;
+  updateInvestment: (id: string, fields: Partial<InvestmentForm>) => void;
+  removeInvestment: (id: string) => void;
+
+  // Subsidies
+  addSubsidy: (sub: SubsidyForm) => void;
+  updateSubsidy: (id: string, fields: Partial<SubsidyForm>) => void;
+  removeSubsidy: (id: string) => void;
+
   // Treasury
   setTreasury: (fields: Partial<TreasuryForm>) => void;
 
@@ -86,27 +107,34 @@ interface BusinessPlanStore extends WizardState {
   getCompletenessScore: () => number;
 }
 
-const initialState: WizardState = {
-  projectId: null,
-  currentBlock: 0,
-  completedBlocks: [],
-  projectName: "",
-  projectDescription: "",
-  businessType: undefined,
-  stage: undefined,
-  revenueLines: [],
-  growthHypotheses: [],
-  teamMembers: [],
-  fixedCosts: [],
-  variableCosts: [],
-  treasury: defaultTreasury(),
-  bpContext: defaultBpContext(),
-};
+function createInitialState(): WizardState {
+  return {
+    projectId: null,
+    currentBlock: 0,
+    completedBlocks: [],
+    projectName: "",
+    projectDescription: "",
+    businessType: undefined,
+    stage: undefined,
+    isCreated: false,
+    legalForm: null,
+    startDate: null,
+    revenueLines: [],
+    growthHypotheses: [],
+    teamMembers: [],
+    fixedCosts: [],
+    variableCosts: [],
+    investments: [],
+    treasury: defaultTreasury(),
+    subsidies: [],
+    bpContext: defaultBpContext(),
+  };
+}
 
 export const useBusinessPlanStore = create<BusinessPlanStore>()(
   persist(
     (set, get) => ({
-      ...initialState,
+      ...createInitialState(),
 
       goToBlock: (block) => set({ currentBlock: block }),
 
@@ -167,13 +195,31 @@ export const useBusinessPlanStore = create<BusinessPlanStore>()(
       removeVariableCost: (id) =>
         set((s) => ({ variableCosts: s.variableCosts.filter((c) => c.id !== id) })),
 
+      addInvestment: (inv) =>
+        set((s) => ({ investments: [...s.investments, inv] })),
+      updateInvestment: (id, fields) =>
+        set((s) => ({
+          investments: s.investments.map((i) => (i.id === id ? { ...i, ...fields } : i)),
+        })),
+      removeInvestment: (id) =>
+        set((s) => ({ investments: s.investments.filter((i) => i.id !== id) })),
+
+      addSubsidy: (sub) =>
+        set((s) => ({ subsidies: [...s.subsidies, sub] })),
+      updateSubsidy: (id, fields) =>
+        set((s) => ({
+          subsidies: s.subsidies.map((s2) => (s2.id === id ? { ...s2, ...fields } : s2)),
+        })),
+      removeSubsidy: (id) =>
+        set((s) => ({ subsidies: s.subsidies.filter((s2) => s2.id !== id) })),
+
       setTreasury: (fields) =>
         set((s) => ({ treasury: { ...s.treasury, ...fields } })),
 
       setBpContext: (fields) =>
         set((s) => ({ bpContext: { ...s.bpContext, ...fields } })),
 
-      resetWizard: () => set(initialState),
+      resetWizard: () => set(createInitialState()),
 
       getCompletenessScore: () => {
         const s = get();
@@ -185,7 +231,7 @@ export const useBusinessPlanStore = create<BusinessPlanStore>()(
         if (s.fixedCosts.length > 0) score++;
         if (s.variableCosts.length > 0 || s.fixedCosts.length > 0) score++;
         if (s.treasury.cash_balance !== null) score++;
-        if (s.bpContext.target_audience) score++;
+        if (s.bpContext.target_audience && (s.bpContext.target_audience === "internal" || s.bpContext.funding_amount_requested !== null || s.bpContext.bank_loan_amount !== null)) score++;
         return Math.round((score / total) * 100);
       },
     }),

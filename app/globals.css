@@ -14,6 +14,23 @@
   --color-green: #1cb785;
   --color-violet: #9d89fc;
   --color-red: #ff4f3f;
+  --background-rgb: 247 245 242;
+  --foreground-rgb: 17 17 17;
+  --card-rgb: 255 255 255;
+  --border-rgb: 228 224 219;
+  --input-rgb: 228 224 219;
+  --primary-rgb: 157 137 252;
+  --primary-foreground-rgb: 255 255 255;
+  --secondary-rgb: 238 237 235;
+  --secondary-foreground-rgb: 17 17 17;
+  --muted-rgb: 238 237 235;
+  --muted-foreground-rgb: 136 136 136;
+  --accent-rgb: 238 237 235;
+  --accent-foreground-rgb: 17 17 17;
+  --destructive-rgb: 255 79 63;
+  --destructive-foreground-rgb: 255 255 255;
+  --ring-rgb: 157 137 252;
+  --success-rgb: 28 183 133;
 }
 
 * {
@@ -61,6 +78,103 @@ body {
     animation-duration: 0.01ms !important;
     transition-duration: 0.01ms !important;
   }
+}
+
+/* Gyna scoped design tokens (shadcn/ui) */
+.gyna-scope {
+  --radius: 0.75rem;
+  --background: #fbfaf8;
+  --foreground: #10131a;
+  --card: #ffffff;
+  --card-foreground: #10131a;
+  --popover: #ffffff;
+  --popover-foreground: #10131a;
+  --primary: #4357f5;
+  --primary-foreground: #ffffff;
+  --secondary: #f0efec;
+  --secondary-foreground: #10131a;
+  --muted: #ecebe8;
+  --muted-foreground: #767987;
+  --accent: #f0efec;
+  --accent-foreground: #10131a;
+  --destructive: #c33f2f;
+  --destructive-foreground: #ffffff;
+  --success: #25765b;
+  --success-foreground: #ffffff;
+  --border: #ddd9d2;
+  --input: #ddd9d2;
+  --ring: #4357f5;
+  --background-rgb: 251 250 248;
+  --foreground-rgb: 16 19 26;
+  --card-rgb: 255 255 255;
+  --card-foreground-rgb: 16 19 26;
+  --popover-rgb: 255 255 255;
+  --popover-foreground-rgb: 16 19 26;
+  --primary-rgb: 67 87 245;
+  --primary-foreground-rgb: 255 255 255;
+  --secondary-rgb: 240 239 236;
+  --secondary-foreground-rgb: 16 19 26;
+  --muted-rgb: 236 235 232;
+  --muted-foreground-rgb: 118 121 135;
+  --accent-rgb: 240 239 236;
+  --accent-foreground-rgb: 16 19 26;
+  --destructive-rgb: 195 63 47;
+  --destructive-foreground-rgb: 255 255 255;
+  --border-rgb: 221 217 210;
+  --input-rgb: 221 217 210;
+  --ring-rgb: 67 87 245;
+  --success-rgb: 37 118 91;
+  background-color: var(--background);
+  color: var(--foreground);
+  font-family: "Inter", ui-sans-serif, system-ui, sans-serif;
+}
+
+.gyna-scope * {
+  border-color: var(--border);
+}
+
+.gyna-scope h1,
+.gyna-scope h2,
+.gyna-scope h3,
+.gyna-scope h4 {
+  font-family: "Space Grotesk", ui-sans-serif, system-ui, sans-serif;
+  letter-spacing: 0;
+}
+
+.gyna-scope .font-display {
+  font-family: "Space Grotesk", ui-sans-serif, system-ui, sans-serif;
+  letter-spacing: 0;
+}
+
+.gyna-scope .font-mono {
+  font-family: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+}
+
+.gyna-scope input,
+.gyna-scope textarea,
+.gyna-scope button[role="combobox"] {
+  box-shadow: 0 1px 3px rgba(16, 19, 26, 0.08);
+}
+
+.gyna-scope textarea,
+.gyna-scope input {
+  background-color: var(--card);
+}
+
+.gyna-scope ::selection {
+  background: rgba(67, 87, 245, 0.18);
+}
+
+.gyna-scope .bg-muted {
+  background-color: rgb(var(--muted-rgb) / 1);
+}
+
+.gyna-scope .bg-muted\/50 {
+  background-color: rgb(var(--muted-rgb) / 0.5);
+}
+
+.gyna-scope .border-border {
+  border-color: rgb(var(--border-rgb) / 1);
 }
 
 /* Brief pré-séance : impression A4 propre */

@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import type { BusinessPlan } from "@/types/business-plan";
+import type { BusinessPlan, AnnualPnL, AnnualFinancingPlan, AnnualBalance } from "@/types/business-plan";
 import { ArrowLeft, Download, FileText, BarChart3 } from "lucide-react";
 
 const SECTION_LABELS: Record<string, string> = {
@@ -23,6 +23,75 @@ const SECTION_ORDER = Object.keys(SECTION_LABELS);
 function fmt(n: number | null | undefined, unit = "€") {
   if (n == null) return "—";
   return `${Math.round(n).toLocaleString("fr-FR")} ${unit}`;
+}
+
+type TableRow = { label: string; values: number[]; bold?: boolean; separator?: boolean };
+
+function sigRows(data: AnnualPnL[]): TableRow[] {
+  const v = (fn: (a: AnnualPnL) => number) => data.map(fn);
+  return [
+    { label: "Chiffre d'affaires", values: v((a) => a.revenue), bold: true },
+    { label: "Charges variables", values: v((a) => -a.variableCosts) },
+    { label: "Marge brute", values: v((a) => a.grossMargin), bold: true, separator: true },
+    { label: "Charges externes", values: v((a) => -a.externalCosts) },
+    { label: "Valeur ajoutée", values: v((a) => a.valueAdded), bold: true, separator: true },
+    { label: "Impôts et taxes", values: v((a) => -a.taxesAndDuties) },
+    { label: "Subventions", values: v((a) => a.subsidies) },
+    { label: "Charges de personnel", values: v((a) => -a.payroll) },
+    { label: "EBE (EBITDA)", values: v((a) => a.ebitda), bold: true, separator: true },
+    { label: "Amortissements", values: v((a) => -a.depreciation) },
+    { label: "Résultat d'exploitation", values: v((a) => a.operatingResult), bold: true, separator: true },
+    { label: "Charges financières", values: v((a) => -a.financialExpenses) },
+    { label: "Résultat courant", values: v((a) => a.currentResult), bold: true },
+    { label: "Impôt sur les sociétés", values: v((a) => -a.tax) },
+    { label: "Résultat net", values: v((a) => a.netResult), bold: true, separator: true },
+  ];
+}
+
+function financingRows(data: AnnualFinancingPlan[]): TableRow[] {
+  const v = (fn: (a: AnnualFinancingPlan) => number) => data.map(fn);
+  return [
+    { label: "— EMPLOIS —", values: data.map(() => 0), bold: true, separator: true },
+    { label: "Variation BFR", values: v((a) => a.bfrVariation) },
+    { label: "Investissements", values: v((a) => a.investments) },
+    { label: "Remboursement emprunts", values: v((a) => a.loanRepayments) },
+    { label: "CAF négative", values: v((a) => a.negativeCaf) },
+    { label: "Total emplois", values: v((a) => a.totalEmploys), bold: true, separator: true },
+    { label: "— RESSOURCES —", values: data.map(() => 0), bold: true, separator: true },
+    { label: "Apports fondateurs", values: v((a) => a.capitalFounders) },
+    { label: "Investisseurs / levée", values: v((a) => a.capitalInvestors) },
+    { label: "Comptes courants associés", values: v((a) => a.associateCurrentAccounts) },
+    { label: "Emprunts bancaires", values: v((a) => a.bankLoans) },
+    { label: "Subventions", values: v((a) => a.subsidies) },
+    { label: "CAF positive", values: v((a) => a.positiveCaf) },
+    { label: "Total ressources", values: v((a) => a.totalResources), bold: true, separator: true },
+    { label: "Excédent / déficit", values: v((a) => a.surplus), bold: true },
+    { label: "Cumul", values: v((a) => a.cumulativeSurplus), bold: true, separator: true },
+  ];
+}
+
+function balanceRows(data: AnnualBalance[]): TableRow[] {
+  const v = (fn: (a: AnnualBalance) => number) => data.map(fn);
+  return [
+    { label: "— ACTIF —", values: data.map(() => 0), bold: true, separator: true },
+    { label: "Immobilisations brutes", values: v((a) => a.grossAssets) },
+    { label: "Amortissements cumulés", values: v((a) => -a.accumulatedDepreciation) },
+    { label: "Immobilisations nettes", values: v((a) => a.netAssets), bold: true },
+    { label: "Créances clients", values: v((a) => a.clientReceivables) },
+    { label: "Crédit TVA", values: v((a) => a.vatReceivables) },
+    { label: "Trésorerie", values: v((a) => a.cashBalance) },
+    { label: "Total actif", values: v((a) => a.totalAssets), bold: true, separator: true },
+    { label: "— PASSIF —", values: data.map(() => 0), bold: true, separator: true },
+    { label: "Capital", values: v((a) => a.capital) },
+    { label: "Comptes courants associés", values: v((a) => a.associateCurrentAccounts) },
+    { label: "Résultats cumulés", values: v((a) => a.retainedEarnings) },
+    { label: "Capitaux propres", values: v((a) => a.totalEquity), bold: true },
+    { label: "Dettes financières", values: v((a) => a.financialDebts) },
+    { label: "Dettes fournisseurs", values: v((a) => a.supplierPayables) },
+    { label: "TVA à payer", values: v((a) => a.vatPayable) },
+    { label: "IS à payer", values: v((a) => a.taxPayable) },
+    { label: "Total passif", values: v((a) => a.totalPassif), bold: true, separator: true },
+  ];
 }
 
 export default function BusinessPlanViewPage() {
@@ -56,6 +125,7 @@ export default function BusinessPlanViewPage() {
           cashflow: bp.financial_tables?.cashflow ?? [],
           bfr: bp.financial_tables?.bfr ?? [],
           indicators: bp.financial_tables?.indicators ?? {},
+          dataSnapshot: bp.data_snapshot,
           projectName,
           scenario: bp.scenario,
         }),
@@ -90,6 +160,10 @@ export default function BusinessPlanViewPage() {
 
   const indicators = bp.financial_tables?.indicators;
   const pnl = bp.financial_tables?.pnl ?? [];
+  const tables = bp.financial_tables as unknown as Record<string, unknown> | undefined;
+  const annualPnl = (tables?.annualPnl ?? []) as AnnualPnL[];
+  const financingPlan = (tables?.financingPlan ?? []) as AnnualFinancingPlan[];
+  const balance = (tables?.balance ?? []) as AnnualBalance[];
   const year1CA = pnl.slice(0, 12).reduce((s, m) => s + m.revenue, 0);
   const year2CA = pnl.slice(12, 24).reduce((s, m) => s + m.revenue, 0);
   const year3CA = pnl.slice(24, 36).reduce((s, m) => s + m.revenue, 0);
@@ -249,54 +323,29 @@ export default function BusinessPlanViewPage() {
             </div>
           ))}
 
-          {/* Financial tables summary */}
-          {pnl.length > 0 && (
+          {/* SIG — Soldes Intermédiaires de Gestion */}
+          {annualPnl.length > 0 && (
             <div className="bg-surface rounded-card shadow-card border border-border overflow-hidden">
               <div className="px-6 py-4 border-b border-border flex items-center gap-2">
                 <BarChart3 size={16} className="text-green" />
-                <h2 className="font-serif text-xl text-fg">Projections financières</h2>
+                <h2 className="font-serif text-xl text-fg">Compte de résultat (SIG)</h2>
               </div>
               <div className="p-6 overflow-x-auto">
                 <table className="w-full text-xs font-sans">
                   <thead>
-                    <tr className="border-b border-border">
-                      <th className="text-left py-2 text-muted font-medium">Indicateur</th>
-                      <th className="text-right py-2 text-muted font-medium">Année 1</th>
-                      <th className="text-right py-2 text-muted font-medium">Année 2</th>
-                      <th className="text-right py-2 text-muted font-medium">Année 3</th>
+                    <tr className="border-b-2 border-border">
+                      <th className="text-left py-2 text-muted font-medium w-[200px]">Poste</th>
+                      {annualPnl.map((a) => (
+                        <th key={a.year} className="text-right py-2 text-muted font-medium">Année {a.year}</th>
+                      ))}
                     </tr>
                   </thead>
                   <tbody>
-                    {[
-                      {
-                        label: "Chiffre d'affaires",
-                        values: [year1CA, year2CA, year3CA],
-                      },
-                      {
-                        label: "Marge brute",
-                        values: [
-                          pnl.slice(0, 12).reduce((s, m) => s + m.grossMargin, 0),
-                          pnl.slice(12, 24).reduce((s, m) => s + m.grossMargin, 0),
-                          pnl.slice(24, 36).reduce((s, m) => s + m.grossMargin, 0),
-                        ],
-                      },
-                      {
-                        label: "EBITDA",
-                        values: [
-                          pnl.slice(0, 12).reduce((s, m) => s + m.ebitda, 0),
-                          pnl.slice(12, 24).reduce((s, m) => s + m.ebitda, 0),
-                          pnl.slice(24, 36).reduce((s, m) => s + m.ebitda, 0),
-                        ],
-                      },
-                    ].map(({ label, values }) => (
-                      <tr key={label} className="border-b border-border last:border-0">
-                        <td className="py-2.5 text-fg font-medium">{label}</td>
+                    {sigRows(annualPnl).map(({ label, values, bold, separator }) => (
+                      <tr key={label} className={`border-b border-border ${separator ? "bg-beige/30" : ""}`}>
+                        <td className={`py-2 ${bold ? "text-fg font-semibold" : "text-muted"}`}>{label}</td>
                         {values.map((v, i) => (
-                          <td
-                            key={i}
-                            className="text-right py-2.5 font-medium"
-                            style={{ color: v < 0 ? "#ff4f3f" : "#111" }}
-                          >
+                          <td key={i} className={`text-right py-2 ${bold ? "font-semibold" : ""}`} style={{ color: v < 0 ? "#ff4f3f" : "#111" }}>
                             {fmt(v)}
                           </td>
                         ))}
@@ -304,11 +353,82 @@ export default function BusinessPlanViewPage() {
                     ))}
                   </tbody>
                 </table>
-                <p className="text-[10px] text-muted mt-3">
-                  * Exportez en XLSX pour le détail mois par mois avec formules interconnectées.
-                </p>
               </div>
             </div>
+          )}
+
+          {/* Plan de financement */}
+          {financingPlan.length > 0 && (
+            <div className="bg-surface rounded-card shadow-card border border-border overflow-hidden">
+              <div className="px-6 py-4 border-b border-border flex items-center gap-2">
+                <BarChart3 size={16} style={{ color: "#ff8f27" }} />
+                <h2 className="font-serif text-xl text-fg">Plan de financement</h2>
+              </div>
+              <div className="p-6 overflow-x-auto">
+                <table className="w-full text-xs font-sans">
+                  <thead>
+                    <tr className="border-b-2 border-border">
+                      <th className="text-left py-2 text-muted font-medium w-[200px]">Poste</th>
+                      {financingPlan.map((a) => (
+                        <th key={a.year} className="text-right py-2 text-muted font-medium">Année {a.year}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {financingRows(financingPlan).map(({ label, values, bold, separator }) => (
+                      <tr key={label} className={`border-b border-border ${separator ? "bg-beige/30" : ""}`}>
+                        <td className={`py-2 ${bold ? "text-fg font-semibold" : "text-muted"}`}>{label}</td>
+                        {values.map((v, i) => (
+                          <td key={i} className={`text-right py-2 ${bold ? "font-semibold" : ""}`} style={{ color: v < 0 ? "#ff4f3f" : "#111" }}>
+                            {fmt(v)}
+                          </td>
+                        ))}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {/* Bilan prévisionnel */}
+          {balance.length > 0 && (
+            <div className="bg-surface rounded-card shadow-card border border-border overflow-hidden">
+              <div className="px-6 py-4 border-b border-border flex items-center gap-2">
+                <BarChart3 size={16} style={{ color: "#9d89fc" }} />
+                <h2 className="font-serif text-xl text-fg">Bilan prévisionnel</h2>
+              </div>
+              <div className="p-6 overflow-x-auto">
+                <table className="w-full text-xs font-sans">
+                  <thead>
+                    <tr className="border-b-2 border-border">
+                      <th className="text-left py-2 text-muted font-medium w-[200px]">Poste</th>
+                      {balance.map((a) => (
+                        <th key={a.year} className="text-right py-2 text-muted font-medium">Année {a.year}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {balanceRows(balance).map(({ label, values, bold, separator }) => (
+                      <tr key={label} className={`border-b border-border ${separator ? "bg-beige/30" : ""}`}>
+                        <td className={`py-2 ${bold ? "text-fg font-semibold" : "text-muted"}`}>{label}</td>
+                        {values.map((v, i) => (
+                          <td key={i} className={`text-right py-2 ${bold ? "font-semibold" : ""}`} style={{ color: v < 0 ? "#ff4f3f" : "#111" }}>
+                            {fmt(v)}
+                          </td>
+                        ))}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {pnl.length > 0 && (
+            <p className="text-center text-[10px] text-muted">
+              * Exportez en XLSX pour le détail mois par mois avec formules interconnectées.
+            </p>
           )}
 
           {/* Footer */}

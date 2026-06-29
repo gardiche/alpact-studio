@@ -5,41 +5,62 @@ const IS_THRESHOLD_ANNUAL = 42500;
 export function calculatePnL(
   totalRevenue: number[],
   variableCosts: number[],
-  fixedCosts: number[],
+  externalCosts: number[],
   payroll: number[],
+  depreciation: number[],
+  financialExpenses: number[],
+  taxesAndDuties: number[],
+  subsidies: number[],
   months = 36
 ): MonthlyPnL[] {
   const pnl: MonthlyPnL[] = [];
-  let annualEbitda = 0;
-  let annualTaxPaid = 0;
+  let cumulativeLoss = 0;
 
   for (let n = 1; n <= months; n++) {
-    const revenue = totalRevenue[n - 1] ?? 0;
-    const variable = variableCosts[n - 1] ?? 0;
-    const fixed = fixedCosts[n - 1] ?? 0;
-    const salary = payroll[n - 1] ?? 0;
+    const i = n - 1;
+    const revenue = totalRevenue[i] ?? 0;
+    const variable = variableCosts[i] ?? 0;
+    const external = externalCosts[i] ?? 0;
+    const salary = payroll[i] ?? 0;
+    const dep = depreciation[i] ?? 0;
+    const financial = financialExpenses[i] ?? 0;
+    const taxes = taxesAndDuties[i] ?? 0;
+    const subsidy = subsidies[i] ?? 0;
 
     const grossMargin = revenue - variable;
     const grossMarginRate = revenue > 0 ? grossMargin / revenue : 0;
-    const ebitda = grossMargin - fixed - salary;
+    const valueAdded = grossMargin - external;
+    const ebitda = valueAdded - taxes + subsidy - salary;
+    const operatingResult = ebitda - dep;
+    const currentResult = operatingResult - financial;
 
-    // Accumulate annual EBITDA for IS calculation
-    annualEbitda += ebitda;
-
-    // IS computed at end of fiscal year (every 12 months)
+    // IS with carry-forward losses
     let tax = 0;
-    if (n % 12 === 0 && annualEbitda > 0) {
-      const taxableAmount = annualEbitda;
-      if (taxableAmount <= IS_THRESHOLD_ANNUAL) {
-        tax = taxableAmount * 0.15;
-      } else {
-        tax = IS_THRESHOLD_ANNUAL * 0.15 + (taxableAmount - IS_THRESHOLD_ANNUAL) * 0.25;
+    if (n % 12 === 0) {
+      const yearStart = n - 12;
+      let annualCurrentResult = 0;
+      for (let m = yearStart; m < n; m++) {
+        if (m < i) {
+          annualCurrentResult += pnl[m].currentResult;
+        } else {
+          annualCurrentResult += currentResult;
+        }
       }
-      annualTaxPaid += tax;
-      annualEbitda = 0;
+
+      const taxableBase = annualCurrentResult + cumulativeLoss;
+      if (taxableBase > 0) {
+        if (taxableBase <= IS_THRESHOLD_ANNUAL) {
+          tax = taxableBase * 0.15;
+        } else {
+          tax = IS_THRESHOLD_ANNUAL * 0.15 + (taxableBase - IS_THRESHOLD_ANNUAL) * 0.25;
+        }
+        cumulativeLoss = 0;
+      } else {
+        cumulativeLoss = taxableBase;
+      }
     }
 
-    const netResult = ebitda - tax;
+    const netResult = currentResult - tax;
 
     pnl.push({
       month: n,
@@ -47,9 +68,17 @@ export function calculatePnL(
       variableCosts: variable,
       grossMargin,
       grossMarginRate,
-      fixedCosts: fixed,
+      externalCosts: external,
+      valueAdded,
+      taxesAndDuties: taxes,
+      subsidies: subsidy,
       payroll: salary,
       ebitda,
+      depreciation: dep,
+      operatingResult,
+      financialExpenses: financial,
+      currentResult,
+      carryForwardLoss: cumulativeLoss,
       tax,
       netResult,
     });

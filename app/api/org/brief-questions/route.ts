@@ -1,4 +1,4 @@
-import { anthropic } from "@/lib/anthropic/client";
+import { ANTHROPIC_MODEL, anthropic } from "@/lib/anthropic/client";
 import { getCohortMemberDetail } from "@/lib/org/cohortRepository";
 import { buildBriefContext } from "@/lib/org/briefBuilder";
 import { getDigest, buildNotionContextBlock } from "@/lib/integrations/notion/digest";
@@ -101,7 +101,7 @@ export async function POST(request: NextRequest) {
     async start(controller) {
       try {
         const anthropicStream = anthropic.messages.stream({
-          model: "claude-sonnet-4-20250514",
+          model: ANTHROPIC_MODEL,
           max_tokens: 600,
           system: SYSTEM_PROMPT,
           messages: [{ role: "user", content: userPrompt }],

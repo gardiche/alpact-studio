@@ -4,6 +4,8 @@ import { ToolCards } from "@/components/hub/ToolCards";
 import { ActivityFeed } from "@/components/hub/ActivityFeed";
 import { getHubMetrics, getActivityFeed } from "@/lib/hub/hubRepository";
 
+export const dynamic = "force-dynamic";
+
 export default async function HubPage() {
   const [metrics, activity] = await Promise.all([
     getHubMetrics(),

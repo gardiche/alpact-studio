@@ -9,7 +9,8 @@
 // alimentent hub_metrics, ToolCards, Impact, et le copilot.
 // ============================================================
 
-import { anthropic } from "@/lib/anthropic/client";
+import { ANTHROPIC_MODEL, anthropic } from "@/lib/anthropic/client";
+import { GoogleGenAI } from "@google/genai";
 import { createClient } from "@/lib/supabase/server";
 import type { NotionContextSnapshot } from "@/types/integrations";
 
@@ -178,7 +179,7 @@ async function callClaudeExtraction(
   const input = buildExtractionInput(snapshot);
 
   const response = await anthropic.messages.create({
-    model: "claude-sonnet-4-20250514",
+    model: ANTHROPIC_MODEL,
     max_tokens: 2000,
     system: EXTRACTION_SYSTEM_PROMPT,
     messages: [
@@ -245,6 +246,75 @@ async function callClaudeExtraction(
   };
 }
 
+async function callGeminiExtraction(
+  snapshot: NotionContextSnapshot
+): Promise<{ metrics: ExtractedMetrics; inputTokens: number; outputTokens: number }> {
+  const apiKey = (
+    process.env.GEMINI_API_KEY ||
+    process.env.GOOGLE_API_KEY ||
+    process.env.GOOGLE_GENERATIVE_AI_API_KEY ||
+    ""
+  ).trim();
+
+  if (!apiKey) {
+    throw new Error("Gemini API key missing");
+  }
+
+  const input = buildExtractionInput(snapshot);
+  const genAI = new GoogleGenAI({ apiKey });
+  const response = await genAI.models.generateContent({
+    model: "gemini-2.5-flash",
+    contents: `${EXTRACTION_SYSTEM_PROMPT}\n\nVoici le contenu Notion du fondateur. Extrais TOUTES les métriques business chiffrées :\n\n${input}`,
+    config: { responseMimeType: "application/json" },
+  });
+
+  const text = response.text ?? "{}";
+  const parsed = JSON.parse(text.replace(/^```json?\n?/, "").replace(/\n?```$/, "").trim());
+
+  return {
+    metrics: normalizeMetrics(parsed),
+    inputTokens: 0,
+    outputTokens: 0,
+  };
+}
+
+async function extractWithAvailableProvider(
+  snapshot: NotionContextSnapshot
+): Promise<{ metrics: ExtractedMetrics; inputTokens: number; outputTokens: number; model: string }> {
+  const hasGemini = Boolean(
+    process.env.GEMINI_API_KEY ||
+    process.env.GOOGLE_API_KEY ||
+    process.env.GOOGLE_GENERATIVE_AI_API_KEY
+  );
+  const hasAnthropic =
+    Boolean(process.env.ANTHROPIC_API_KEY) && process.env.ANTHROPIC_API_KEY !== "sk-ant-placeholder";
+
+  if (hasAnthropic) {
+    try {
+      const result = await callClaudeExtraction(snapshot);
+      return { ...result, model: ANTHROPIC_MODEL };
+    } catch (err) {
+      console.warn("[metricsExtractor] Claude extraction failed, trying Gemini fallback:", err);
+    }
+  }
+
+  if (hasGemini) {
+    try {
+      const result = await callGeminiExtraction(snapshot);
+      return { ...result, model: "gemini-2.5-flash" };
+    } catch (err) {
+      console.warn("[metricsExtractor] Gemini extraction failed, using local fallback:", err);
+    }
+  }
+
+  return {
+    metrics: extractMetricsLocally(snapshot),
+    inputTokens: 0,
+    outputTokens: 0,
+    model: "local-regex-fallback",
+  };
+}
+
 // ============================================================
 // Helpers de typage
 // ============================================================
@@ -268,6 +338,111 @@ function asString(v: unknown): string | null {
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function asArray(v: unknown): any[] {
   return Array.isArray(v) ? v : [];
+}
+
+function normalizeMetrics(parsed: Record<string, unknown>): ExtractedMetrics {
+  return {
+    mrr: asNumber(parsed.mrr),
+    mrr_previous: asNumber(parsed.mrr_previous),
+    arr: asNumber(parsed.arr),
+    ca_mensuel: asNumber(parsed.ca_mensuel),
+    ca_annuel: asNumber(parsed.ca_annuel),
+    burn_rate: asNumber(parsed.burn_rate),
+    runway_months: asNumber(parsed.runway_months),
+    tresorerie: asNumber(parsed.tresorerie),
+    capital_raised: asNumber(parsed.capital_raised),
+    nb_clients: asInt(parsed.nb_clients),
+    nb_clients_previous: asInt(parsed.nb_clients_previous),
+    nb_prospects: asInt(parsed.nb_prospects),
+    nb_users: asInt(parsed.nb_users),
+    churn_rate: asNumber(parsed.churn_rate),
+    cac: asNumber(parsed.cac),
+    ltv: asNumber(parsed.ltv),
+    nps: asNumber(parsed.nps),
+    headcount: asInt(parsed.headcount),
+    nb_recrutements_en_cours: asInt(parsed.nb_recrutements_en_cours),
+    nb_leads_mois: asInt(parsed.nb_leads_mois),
+    taux_conversion: asNumber(parsed.taux_conversion),
+    nb_rdv_mois: asInt(parsed.nb_rdv_mois),
+    priorite_active: asString(parsed.priorite_active),
+    prochaine_echeance: asString(parsed.prochaine_echeance),
+    jalons_recents: asArray(parsed.jalons_recents),
+    signaux_positifs: asArray(parsed.signaux_positifs),
+    signaux_negatifs: asArray(parsed.signaux_negatifs),
+    alertes: asArray(parsed.alertes),
+    confidence: asNumber(parsed.confidence) ?? 0.5,
+  };
+}
+
+function parseLooseNumber(raw: string): number | null {
+  const cleaned = raw
+    .replace(/\s/g, "")
+    .replace(/€/g, "")
+    .replace(/eur/gi, "")
+    .replace(/k/gi, "000")
+    .replace(/,/g, ".");
+  const n = Number(cleaned.match(/-?\d+(\.\d+)?/)?.[0]);
+  return Number.isFinite(n) ? n : null;
+}
+
+function pickMetric(text: string, labels: string[]): number | null {
+  for (const label of labels) {
+    const escaped = label.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    const match = text.match(new RegExp(`${escaped}[^\\n\\d-]{0,40}(-?[\\d\\s.,]+\\s*(?:k|€|eur)?)`, "i"));
+    if (match?.[1]) {
+      const n = parseLooseNumber(match[1]);
+      if (n !== null) return n;
+    }
+  }
+  return null;
+}
+
+function extractMetricsLocally(snapshot: NotionContextSnapshot): ExtractedMetrics {
+  const text = snapshot.pages.map((p) => `${p.title}\n${p.content}`).join("\n\n");
+  const mrr = pickMetric(text, ["mrr", "revenu récurrent mensuel", "revenu recurrent mensuel"]);
+  const mrrPrevious = pickMetric(text, ["mrr précédent", "mrr precedent", "mrr n-1", "mrr mois précédent", "mrr mois precedent"]);
+  const burnRate = pickMetric(text, ["burn rate", "burn", "dépenses mensuelles", "depenses mensuelles"]);
+  const tresorerie = pickMetric(text, ["trésorerie", "tresorerie", "cash", "banque"]);
+  const runway = pickMetric(text, ["runway"]);
+  const nbClients = pickMetric(text, ["clients actifs", "nombre de clients", "clients"]);
+  const nbProspects = pickMetric(text, ["prospects", "pipeline"]);
+  const headcount = pickMetric(text, ["équipe", "equipe", "headcount", "effectif"]);
+  const leads = pickMetric(text, ["leads ce mois", "leads mensuels", "leads"]);
+  const conversion = pickMetric(text, ["taux de conversion", "conversion"]);
+  const capitalRaised = pickMetric(text, ["levée", "levee", "capital levé", "capital leve", "fonds levés", "fonds leves"]);
+  const computedRunway = runway ?? (tresorerie !== null && burnRate && burnRate > 0 ? tresorerie / burnRate : null);
+
+  return {
+    mrr,
+    mrr_previous: mrrPrevious,
+    arr: mrr !== null ? mrr * 12 : null,
+    ca_mensuel: null,
+    ca_annuel: null,
+    burn_rate: burnRate,
+    runway_months: computedRunway,
+    tresorerie,
+    capital_raised: capitalRaised,
+    nb_clients: nbClients !== null ? Math.round(nbClients) : null,
+    nb_clients_previous: null,
+    nb_prospects: nbProspects !== null ? Math.round(nbProspects) : null,
+    nb_users: null,
+    churn_rate: null,
+    cac: null,
+    ltv: null,
+    nps: null,
+    headcount: headcount !== null ? Math.round(headcount) : null,
+    nb_recrutements_en_cours: null,
+    nb_leads_mois: leads !== null ? Math.round(leads) : null,
+    taux_conversion: conversion,
+    nb_rdv_mois: null,
+    priorite_active: null,
+    prochaine_echeance: null,
+    jalons_recents: [],
+    signaux_positifs: [],
+    signaux_negatifs: [],
+    alertes: [],
+    confidence: 0.35,
+  };
 }
 
 // ============================================================
@@ -310,8 +485,8 @@ export async function extractAndSaveMetrics(
 ): Promise<ExtractedMetrics> {
   const supabase = await createClient();
 
-  // 1. Appeler Claude pour l'extraction
-  const { metrics, inputTokens, outputTokens } = await callClaudeExtraction(snapshot);
+  // 1. Extraire via Gemini/Claude, ou fallback local si aucune IA n'est disponible
+  const { metrics, inputTokens, outputTokens, model } = await extractWithAvailableProvider(snapshot);
 
   // 2. Sauvegarder dans extracted_metrics (historique)
   await supabase.from("extracted_metrics").insert({
@@ -346,7 +521,7 @@ export async function extractAndSaveMetrics(
     signaux_negatifs: metrics.signaux_negatifs,
     alertes: metrics.alertes,
     confidence: metrics.confidence,
-    model: "claude-sonnet-4-20250514",
+    model,
     input_tokens: inputTokens,
     output_tokens: outputTokens,
   });

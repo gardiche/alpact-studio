@@ -13,7 +13,7 @@ export function TreasuryStep({ onNext, onBack }: TreasuryStepProps) {
   const { treasury, setTreasury, markBlockComplete } = useBusinessPlanStore();
 
   function handleNext() {
-    markBlockComplete(5);
+    markBlockComplete(6);
     onNext();
   }
 
@@ -145,19 +145,6 @@ export function TreasuryStep({ onNext, onBack }: TreasuryStepProps) {
       {/* Grants + receivables */}
       <QuestionCard question="D'autres éléments financiers à intégrer ?">
         <div className="space-y-3">
-          <div className="flex items-center gap-3">
-            <label className="text-xs text-muted w-36 flex-shrink-0">Subventions en attente</label>
-            <div className="relative">
-              <input
-                type="number"
-                value={treasury.pending_grants ?? ""}
-                onChange={(e) => setTreasury({ pending_grants: Number(e.target.value) || null })}
-                placeholder="0"
-                className="w-32 pl-3 pr-7 py-2 rounded-lg text-sm font-sans text-fg bg-bg border border-border focus:outline-none focus:ring-2 focus:ring-green/20"
-              />
-              <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-muted">€</span>
-            </div>
-          </div>
           <div className="flex items-center gap-3">
             <label className="text-xs text-muted w-36 flex-shrink-0">Factures clients en attente</label>
             <div className="relative">

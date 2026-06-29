@@ -4,7 +4,7 @@ import { useState } from "react";
 import { Plus, Trash2 } from "lucide-react";
 import { useBusinessPlanStore } from "@/lib/store/useBusinessPlanStore";
 import { QuestionCard } from "../QuestionCard";
-import type { RevenueLineForm } from "@/types/business-plan";
+import type { RevenueLineForm, LegalForm } from "@/types/business-plan";
 
 const BILLING_OPTIONS = [
   { value: "monthly", label: "Au mois (abonnement)" },
@@ -36,6 +36,15 @@ const STAGES = [
   { value: "post_funding", label: "Post-levée" },
 ] as const;
 
+const LEGAL_FORMS: { value: LegalForm; label: string }[] = [
+  { value: "sas", label: "SAS" },
+  { value: "sarl", label: "SARL" },
+  { value: "eurl", label: "EURL" },
+  { value: "ei", label: "EI" },
+  { value: "micro", label: "Micro-entreprise" },
+  { value: "other", label: "Autre" },
+];
+
 function newLine(): RevenueLineForm {
   return {
     id: crypto.randomUUID(),
@@ -55,6 +64,7 @@ interface ActivityStepProps {
 export function ActivityStep({ onNext }: ActivityStepProps) {
   const {
     projectName, projectDescription, businessType, stage,
+    isCreated, legalForm, startDate,
     revenueLines,
     setProject, addRevenueLine, updateRevenueLine, removeRevenueLine,
     markBlockComplete,
@@ -136,6 +146,63 @@ export function ActivityStep({ onNext }: ActivityStepProps) {
               {s.label}
             </button>
           ))}
+        </div>
+      </QuestionCard>
+
+      {/* Company status */}
+      <QuestionCard question="La boite est deja creee ?">
+        <div className="flex flex-wrap gap-2">
+          {[
+            { value: false, label: "Pas encore" },
+            { value: true, label: "Oui, deja immatriculee" },
+          ].map((opt) => (
+            <button
+              key={String(opt.value)}
+              onClick={() => setProject({ isCreated: opt.value })}
+              className={`px-4 py-2 rounded-full text-sm font-sans font-medium border transition-all ${
+                isCreated === opt.value
+                  ? "bg-green text-white border-green"
+                  : "bg-beige text-fg border-border hover:border-green/40"
+              }`}
+            >
+              {opt.label}
+            </button>
+          ))}
+        </div>
+
+        {isCreated && (
+          <div className="mt-3 space-y-3">
+            <div>
+              <p className="text-xs text-muted mb-1.5">Forme juridique</p>
+              <div className="flex flex-wrap gap-1.5">
+                {LEGAL_FORMS.map((lf) => (
+                  <button
+                    key={lf.value}
+                    onClick={() => setProject({ legalForm: lf.value })}
+                    className={`px-3 py-1.5 rounded-full text-xs font-sans font-medium border transition-all ${
+                      legalForm === lf.value
+                        ? "bg-green text-white border-green"
+                        : "bg-surface text-muted border-border hover:border-green/40"
+                    }`}
+                  >
+                    {lf.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+
+        <div className="mt-3">
+          <p className="text-xs text-muted mb-1.5">
+            {isCreated ? "Date de creation" : "Date de demarrage prevue"}
+          </p>
+          <input
+            type="date"
+            value={startDate ?? ""}
+            onChange={(e) => setProject({ startDate: e.target.value || null })}
+            className="px-3 py-2 rounded-lg font-sans text-sm text-fg bg-bg border border-border focus:outline-none focus:ring-2 focus:ring-green/20 focus:border-green transition-all"
+          />
         </div>
       </QuestionCard>
 

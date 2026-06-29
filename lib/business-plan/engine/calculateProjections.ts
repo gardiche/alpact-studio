@@ -1,4 +1,4 @@
-import type { ProjectData, ProjectionResult, Scenario } from "@/types/business-plan";
+import type { ProjectData, ProjectionResult, Scenario, Investment, Subsidy } from "@/types/business-plan";
 import { calculateRevenueLineProjection, aggregateRevenue } from "./revenue";
 import { calculatePayroll } from "./payroll";
 import { calculateFixedCosts, calculateVariableCosts } from "./costs";
@@ -7,8 +7,35 @@ import { calculateBFR } from "./bfr";
 import { calculateCashflow } from "./cashflow";
 import { calculateIndicators } from "./indicators";
 import { applyScenario } from "./scenarios";
+import { calculateBankDebtService } from "./debt";
+import { calculateAmortizations, calculateInvestmentsByMonth } from "./amortization";
+import { calculateTaxesAndDuties } from "./taxes";
+import { calculateSubsidies } from "./subsidies";
+import { buildAnnualPnL, buildFinancingPlan, buildBalanceSheet } from "./annualTables";
 
 const MONTHS = 36;
+
+function toInvestments(data: ProjectData): Investment[] {
+  return (data.investments ?? []).map((inv) => ({
+    ...inv,
+    project_id: data.project.id,
+    amount_ht: inv.amount_ht ?? 0,
+    created_at: "",
+    updated_at: "",
+  }));
+}
+
+function toSubsidies(data: ProjectData): Subsidy[] {
+  return (data.subsidies ?? []).map((sub) => ({
+    ...sub,
+    project_id: data.project.id,
+    amount: sub.amount ?? 0,
+    expected_date: sub.expected_date ?? "",
+    source: "user_input" as const,
+    created_at: "",
+    updated_at: "",
+  }));
+}
 
 export function calculateProjections(
   rawData: ProjectData,
@@ -36,7 +63,7 @@ export function calculateProjections(
   const { totalRevenue, totalClients } = aggregateRevenue(lineProjections, MONTHS);
 
   // Costs
-  const fixedCosts = calculateFixedCosts(data.fixedCosts, MONTHS);
+  const externalCosts = calculateFixedCosts(data.fixedCosts, MONTHS);
   const variableCosts = calculateVariableCosts(
     data.variableCosts,
     totalClients,
@@ -44,25 +71,60 @@ export function calculateProjections(
     MONTHS
   );
   const payroll = calculatePayroll(data.teamMembers, MONTHS);
+  const bankDebtService = calculateBankDebtService(data.bpContext, MONTHS);
+  const financialExpenses = bankDebtService.map((m) => m.interest);
+
+  // Investments & amortizations
+  const investments = toInvestments(data);
+  const { monthly: depreciation, annual: amortizations } = calculateAmortizations(investments, MONTHS);
+  const investmentsByMonth = calculateInvestmentsByMonth(investments, MONTHS);
+
+  // Taxes & duties (hors IS)
+  const taxesAndDuties = calculateTaxesAndDuties(payroll, MONTHS);
+
+  // Subsidies
+  const subsidyList = toSubsidies(data);
+  const monthlySubsidies = calculateSubsidies(subsidyList, data.project.start_date, MONTHS);
 
   // Financial tables
-  const pnl = calculatePnL(totalRevenue, variableCosts, fixedCosts, payroll, MONTHS);
+  const pnl = calculatePnL(
+    totalRevenue, variableCosts, externalCosts, payroll,
+    depreciation, financialExpenses, taxesAndDuties, monthlySubsidies, MONTHS
+  );
+
   const bfr = calculateBFR(
     totalRevenue,
     variableCosts,
-    fixedCosts,
+    externalCosts,
     data.treasury.payment_delay_clients_days,
     data.treasury.payment_delay_suppliers_days,
     MONTHS
   );
-  const cashflow = calculateCashflow(pnl, bfr, data.treasury, MONTHS);
-  const indicators = calculateIndicators(
-    pnl,
-    cashflow,
-    data.revenueLines,
-    data.growthHypotheses,
-    data.variableCosts
+
+  const cashflow = calculateCashflow(
+    pnl, bfr, data.treasury, data.bpContext,
+    bankDebtService, MONTHS, investmentsByMonth, monthlySubsidies
   );
 
-  return { scenario, pnl, cashflow, bfr, indicators };
+  const indicators = calculateIndicators(
+    pnl, cashflow, data.revenueLines, data.growthHypotheses,
+    data.variableCosts, data, investments
+  );
+
+  // Annual tables
+  const annualPnl = buildAnnualPnL(pnl);
+  const financingPlan = buildFinancingPlan(annualPnl, bfr, cashflow, investments, data.bpContext);
+  const balance = buildBalanceSheet(annualPnl, bfr, cashflow, amortizations, investments, data.bpContext);
+
+  return {
+    scenario,
+    pnl,
+    cashflow,
+    bfr,
+    annualPnl,
+    financingPlan,
+    balance,
+    amortizations,
+    indicators,
+  };
 }

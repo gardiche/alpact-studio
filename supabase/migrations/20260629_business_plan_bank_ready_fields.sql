@@ -1,0 +1,11 @@
+ALTER TABLE public.bp_contexts
+  ADD COLUMN IF NOT EXISTS founder_contribution NUMERIC,
+  ADD COLUMN IF NOT EXISTS capital_social NUMERIC,
+  ADD COLUMN IF NOT EXISTS associate_current_account NUMERIC,
+  ADD COLUMN IF NOT EXISTS bank_loan_amount NUMERIC,
+  ADD COLUMN IF NOT EXISTS loan_duration_months INTEGER DEFAULT 60,
+  ADD COLUMN IF NOT EXISTS annual_interest_rate NUMERIC DEFAULT 4.5,
+  ADD COLUMN IF NOT EXISTS deferment_months INTEGER DEFAULT 0,
+  ADD COLUMN IF NOT EXISTS capex_amount NUMERIC,
+  ADD COLUMN IF NOT EXISTS working_capital_buffer NUMERIC,
+  ADD COLUMN IF NOT EXISTS vat_rate NUMERIC DEFAULT 20;

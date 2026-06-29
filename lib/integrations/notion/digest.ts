@@ -9,7 +9,7 @@
 // ce qui évite des appels Claude inutiles.
 // ============================================================
 
-import { anthropic } from "@/lib/anthropic/client";
+import { ANTHROPIC_MODEL, anthropic } from "@/lib/anthropic/client";
 import { createClient } from "@/lib/supabase/server";
 import type { NotionContextSnapshot, NotionContextPage } from "@/types/integrations";
 
@@ -135,7 +135,7 @@ async function generateDigest(
   const input = buildDigestInput(snapshot);
 
   const response = await anthropic.messages.create({
-    model: "claude-sonnet-4-20250514",
+    model: ANTHROPIC_MODEL,
     max_tokens: 1200,
     system: DIGEST_SYSTEM_PROMPT,
     messages: [
@@ -298,7 +298,7 @@ export async function getOrCreateDigest(
         signals: digest.signals,
         resources: digest.resources,
         summary: digest.summary,
-        model: "claude-sonnet-4-20250514",
+        model: ANTHROPIC_MODEL,
         input_tokens: inputTokens,
         output_tokens: outputTokens,
         generated_at: now,

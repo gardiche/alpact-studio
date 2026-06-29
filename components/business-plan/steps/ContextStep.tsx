@@ -20,7 +20,7 @@ export function ContextStep({ onNext, onBack }: ContextStepProps) {
   const { bpContext, setBpContext, markBlockComplete } = useBusinessPlanStore();
 
   function handleNext() {
-    markBlockComplete(6);
+    markBlockComplete(8);
     onNext();
   }
 

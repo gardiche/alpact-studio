@@ -29,5 +29,13 @@ export function applyScenario(data: ProjectData, scenario: Scenario): ProjectDat
       ...t,
       net_salary_monthly: t.net_salary_monthly != null ? t.net_salary_monthly * m.costs : undefined,
     })),
+    investments: (data.investments ?? []).map((inv) => ({
+      ...inv,
+      amount_ht: inv.amount_ht * m.costs,
+    })),
+    bpContext: {
+      ...data.bpContext,
+      working_capital_buffer: data.bpContext.working_capital_buffer != null ? data.bpContext.working_capital_buffer * m.costs : undefined,
+    },
   };
 }

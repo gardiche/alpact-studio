@@ -11,6 +11,8 @@ export type DataSource =
 
 // ─── Supabase DB types ─────────────────────────────────────────────────────────
 
+export type LegalForm = "sas" | "sarl" | "eurl" | "ei" | "micro" | "other";
+
 export interface Project {
   id: string;
   user_id: string;
@@ -18,6 +20,9 @@ export interface Project {
   description?: string;
   business_type?: "saas" | "service" | "marketplace" | "ecommerce" | "hardware" | "other";
   stage?: "pre_revenue" | "early_revenue" | "scaling" | "post_funding";
+  is_created: boolean;
+  legal_form?: LegalForm;
+  start_date?: string;
   country: string;
   currency: string;
   created_at: string;
@@ -132,12 +137,69 @@ export interface Treasury {
   updated_at: string;
 }
 
+export type InvestmentCategory =
+  | "software_dev"
+  | "hardware"
+  | "design_branding"
+  | "infrastructure"
+  | "office_furniture"
+  | "deposit"
+  | "establishment_fees"
+  | "trademark_patent"
+  | "other";
+
+export const INVESTMENT_AMORTIZATION_YEARS: Record<InvestmentCategory, number> = {
+  software_dev: 3,
+  hardware: 3,
+  design_branding: 3,
+  infrastructure: 3,
+  office_furniture: 5,
+  deposit: 0,
+  establishment_fees: 5,
+  trademark_patent: 5,
+  other: 3,
+};
+
+export interface Investment {
+  id: string;
+  project_id: string;
+  category: InvestmentCategory;
+  label: string;
+  amount_ht: number;
+  month: number;
+  amortization_years: number;
+  source: DataSource;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface Subsidy {
+  id: string;
+  project_id: string;
+  name: string;
+  amount: number;
+  expected_date: string;
+  source: DataSource;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface BpContext {
   id: string;
   project_id: string;
   target_audience?: "bank" | "investor" | "bpi" | "partner" | "internal";
   funding_amount_requested?: number;
   funding_usage?: string;
+  founder_contribution?: number;
+  capital_social?: number;
+  associate_current_account?: number;
+  bank_loan_amount?: number;
+  loan_duration_months?: number;
+  annual_interest_rate?: number;
+  deferment_months?: number;
+  capex_amount?: number;
+  working_capital_buffer?: number;
+  vat_rate?: number;
   deadline?: string;
   market_context?: string;
   competitive_advantage?: string;
@@ -181,6 +243,8 @@ export interface ProjectData {
   teamMembers: TeamMember[];
   fixedCosts: FixedCost[];
   variableCosts: VariableCost[];
+  investments: Investment[];
+  subsidies: Subsidy[];
   treasury: Treasury;
   bpContext: BpContext;
 }
@@ -199,9 +263,17 @@ export interface MonthlyPnL {
   variableCosts: number;
   grossMargin: number;
   grossMarginRate: number;
-  fixedCosts: number;
+  externalCosts: number;
+  valueAdded: number;
+  taxesAndDuties: number;
+  subsidies: number;
   payroll: number;
   ebitda: number;
+  depreciation: number;
+  operatingResult: number;
+  financialExpenses: number;
+  currentResult: number;
+  carryForwardLoss: number;
   tax: number;
   netResult: number;
 }
@@ -209,12 +281,17 @@ export interface MonthlyPnL {
 export interface MonthlyCashflow {
   month: number;
   clientReceipts: number;
+  vatCollected: number;
+  vatDeductible: number;
+  vatPayments: number;
   exceptionalInflows: number;
   totalInflows: number;
   supplierPayments: number;
   salaryPayments: number;
   loanRepayments: number;
+  interestPayments: number;
   taxPayments: number;
+  capexPayments: number;
   totalOutflows: number;
   netCashflow: number;
   bfrVariation: number;
@@ -234,18 +311,112 @@ export interface Indicators {
   runway: number | null;
   breakEvenMonth: number | null;
   breakEvenClients: number;
+  breakEvenRevenue: number | null;
   burnRate: number;
+  minCashBalance: number;
+  minDscr: number | null;
+  year1DebtService: number;
+  year1Ebitda: number;
+  financingNeed: number;
+  financingGap: number;
+  debtToEbitdaYear3: number | null;
   cac: number | null;
   ltv: number | null;
   ltvCacRatio: number | null;
   mrr: number;
   arr: number;
+  caf: [number, number, number];
+  grossMarginRate: [number, number, number];
+  valueAddedRate: [number, number, number];
+}
+
+// ─── Annual output tables ────────────────────────────────────────────────────
+
+export interface AnnualPnL {
+  year: number;
+  revenue: number;
+  variableCosts: number;
+  grossMargin: number;
+  grossMarginRate: number;
+  externalCosts: number;
+  valueAdded: number;
+  valueAddedRate: number;
+  taxesAndDuties: number;
+  subsidies: number;
+  payroll: number;
+  ebitda: number;
+  depreciation: number;
+  operatingResult: number;
+  financialExpenses: number;
+  currentResult: number;
+  carryForwardLoss: number;
+  tax: number;
+  netResult: number;
+}
+
+export interface AnnualFinancingPlan {
+  year: number;
+  // EMPLOIS
+  bfrVariation: number;
+  investments: number;
+  loanRepayments: number;
+  negativeCaf: number;
+  totalEmploys: number;
+  // RESSOURCES
+  capitalFounders: number;
+  capitalInvestors: number;
+  associateCurrentAccounts: number;
+  bankLoans: number;
+  subsidies: number;
+  refundableAdvances: number;
+  positiveCaf: number;
+  totalResources: number;
+  // SOLDE
+  surplus: number;
+  cumulativeSurplus: number;
+}
+
+export interface AnnualBalance {
+  year: number;
+  // ACTIF
+  grossAssets: number;
+  accumulatedDepreciation: number;
+  netAssets: number;
+  clientReceivables: number;
+  vatReceivables: number;
+  cashBalance: number;
+  totalAssets: number;
+  // PASSIF
+  capital: number;
+  associateCurrentAccounts: number;
+  retainedEarnings: number;
+  totalEquity: number;
+  financialDebts: number;
+  supplierPayables: number;
+  vatPayable: number;
+  taxPayable: number;
+  totalLiabilities: number;
+  totalPassif: number;
+}
+
+export interface AnnualAmortization {
+  category: InvestmentCategory;
+  label: string;
+  amount: number;
+  startMonth: number;
+  durationYears: number;
+  yearlyDepreciation: [number, number, number];
+  netBookValue: [number, number, number];
 }
 
 export interface FinancialTables {
   pnl: MonthlyPnL[];
   cashflow: MonthlyCashflow[];
   bfr: MonthlyBFR[];
+  annualPnl: AnnualPnL[];
+  financingPlan: AnnualFinancingPlan[];
+  balance: AnnualBalance[];
+  amortizations: AnnualAmortization[];
   indicators: Indicators;
 }
 
@@ -254,6 +425,10 @@ export interface ProjectionResult {
   pnl: MonthlyPnL[];
   cashflow: MonthlyCashflow[];
   bfr: MonthlyBFR[];
+  annualPnl: AnnualPnL[];
+  financingPlan: AnnualFinancingPlan[];
+  balance: AnnualBalance[];
+  amortizations: AnnualAmortization[];
   indicators: Indicators;
 }
 
@@ -275,14 +450,19 @@ export interface GeneratedBPContent {
 
 export interface WizardState {
   projectId: string | null;
-  currentBlock: number; // 0-6
+  currentBlock: number; // 0-9, with 9 as review
   completedBlocks: number[];
 
-  // Block 1 - Activity
+  // Block 0 - Project
   projectName: string;
   projectDescription: string;
   businessType: Project["business_type"];
   stage: Project["stage"];
+  isCreated: boolean;
+  legalForm: LegalForm | null;
+  startDate: string | null;
+
+  // Block 1 - Revenue lines (within Activity step)
   revenueLines: RevenueLineForm[];
 
   // Block 2 - Growth
@@ -291,14 +471,16 @@ export interface WizardState {
   // Block 3 - Team
   teamMembers: TeamMemberForm[];
 
-  // Block 4 - Fixed costs
+  // Block 4 - Charges (fixed + variable merged)
   fixedCosts: FixedCostForm[];
-
-  // Block 5 - Variable costs
   variableCosts: VariableCostForm[];
 
-  // Block 6 - Treasury
+  // Block 5 - Investments
+  investments: InvestmentForm[];
+
+  // Block 6 - Treasury & financing
   treasury: TreasuryForm;
+  subsidies: SubsidyForm[];
 
   // Block 7 - Context
   bpContext: BpContextForm;
@@ -357,6 +539,23 @@ export interface VariableCostForm {
   source: DataSource;
 }
 
+export interface InvestmentForm {
+  id: string;
+  category: InvestmentCategory;
+  label: string;
+  amount_ht: number | null;
+  month: number;
+  amortization_years: number;
+  source: DataSource;
+}
+
+export interface SubsidyForm {
+  id: string;
+  name: string;
+  amount: number | null;
+  expected_date: string | null;
+}
+
 export interface TreasuryForm {
   cash_balance: number | null;
   fundraising_amount: number | null;
@@ -368,7 +567,6 @@ export interface TreasuryForm {
     monthly_payment: number;
     remaining_months: number;
   }>;
-  pending_grants: number | null;
   accounts_receivable: number | null;
   payment_delay_clients_days: number;
   payment_delay_suppliers_days: number;
@@ -379,6 +577,15 @@ export interface BpContextForm {
   target_audience: BpContext["target_audience"];
   funding_amount_requested: number | null;
   funding_usage: string;
+  founder_contribution: number | null;
+  capital_social: number | null;
+  associate_current_account: number | null;
+  bank_loan_amount: number | null;
+  loan_duration_months: number | null;
+  annual_interest_rate: number | null;
+  deferment_months: number | null;
+  working_capital_buffer: number | null;
+  vat_rate: number | null;
   deadline: string | null;
   market_context: string;
   competitive_advantage: string;

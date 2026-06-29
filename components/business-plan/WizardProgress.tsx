@@ -3,12 +3,14 @@
 import { Check } from "lucide-react";
 
 const BLOCKS = [
-  { label: "Activité" },
+  { label: "Activite" },
   { label: "Croissance" },
-  { label: "Équipe" },
+  { label: "Equipe" },
   { label: "Charges fixes" },
   { label: "Charges variables" },
-  { label: "Trésorerie" },
+  { label: "Investissements" },
+  { label: "Tresorerie" },
+  { label: "Financement" },
   { label: "Contexte" },
 ];
 
@@ -44,9 +46,7 @@ export function WizardProgress({ currentBlock, completedBlocks, onBlockClick }: 
               ${!isClickable ? "opacity-40 cursor-not-allowed" : ""}
             `}
           >
-            {isCompleted && !isActive && (
-              <Check size={11} className="text-green" />
-            )}
+            {isCompleted && !isActive && <Check size={11} className="text-green" />}
             <span>{i + 1}. {block.label}</span>
           </button>
         );
@@ -54,3 +54,4 @@ export function WizardProgress({ currentBlock, completedBlocks, onBlockClick }: 
     </div>
   );
 }
+

@@ -10,6 +10,8 @@ import { TeamStep } from "./steps/TeamStep";
 import { FixedCostsStep } from "./steps/FixedCostsStep";
 import { VariableCostsStep } from "./steps/VariableCostsStep";
 import { TreasuryStep } from "./steps/TreasuryStep";
+import { InvestmentsStep } from "./steps/InvestmentsStep";
+import { FinancingStep } from "./steps/FinancingStep";
 import { ContextStep } from "./steps/ContextStep";
 import { ReviewStep } from "./steps/ReviewStep";
 import type { Scenario } from "@/types/business-plan";
@@ -22,7 +24,9 @@ const BLOCK_LABELS = [
   "Ton équipe",
   "Dépenses fixes",
   "Dépenses variables",
+  "Tes investissements",
   "Ta trésorerie",
+  "Financement",
   "Contexte",
 ];
 
@@ -32,7 +36,7 @@ export function BusinessPlanWizard() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [generationError, setGenerationError] = useState<string | null>(null);
 
-  const isReview = currentBlock === 7;
+  const isReview = currentBlock === 9;
 
   function buildProjectData(): ProjectData {
     const now = new Date().toISOString();
@@ -45,6 +49,9 @@ export function BusinessPlanWizard() {
       description: store.projectDescription,
       business_type: store.businessType,
       stage: store.stage,
+      is_created: store.isCreated ?? false,
+      legal_form: store.legalForm ?? undefined,
+      start_date: store.startDate ?? undefined,
       country: "FR",
       currency: "EUR",
       created_at: now,
@@ -96,6 +103,22 @@ export function BusinessPlanWizard() {
         created_at: now,
         updated_at: now,
       })),
+      investments: (store.investments ?? []).map((inv) => ({
+        ...inv,
+        project_id: project.id,
+        amount_ht: inv.amount_ht ?? 0,
+        created_at: now,
+        updated_at: now,
+      })),
+      subsidies: (store.subsidies ?? []).map((sub) => ({
+        ...sub,
+        project_id: project.id,
+        amount: sub.amount ?? 0,
+        expected_date: sub.expected_date ?? "",
+        source: "user_input" as const,
+        created_at: now,
+        updated_at: now,
+      })),
       treasury: {
         id: "t1",
         project_id: project.id,
@@ -103,7 +126,6 @@ export function BusinessPlanWizard() {
         fundraising_amount: store.treasury.fundraising_amount ?? undefined,
         fundraising_date: store.treasury.fundraising_date ?? undefined,
         outstanding_loans: store.treasury.outstanding_loans,
-        pending_grants: store.treasury.pending_grants ?? undefined,
         accounts_receivable: store.treasury.accounts_receivable ?? undefined,
         payment_delay_clients_days: store.treasury.payment_delay_clients_days,
         payment_delay_suppliers_days: store.treasury.payment_delay_suppliers_days,
@@ -117,6 +139,15 @@ export function BusinessPlanWizard() {
         target_audience: store.bpContext.target_audience,
         funding_amount_requested: store.bpContext.funding_amount_requested ?? undefined,
         funding_usage: store.bpContext.funding_usage || undefined,
+        founder_contribution: store.bpContext.founder_contribution ?? undefined,
+        capital_social: store.bpContext.capital_social ?? undefined,
+        associate_current_account: store.bpContext.associate_current_account ?? undefined,
+        bank_loan_amount: store.bpContext.bank_loan_amount ?? undefined,
+        loan_duration_months: store.bpContext.loan_duration_months ?? undefined,
+        annual_interest_rate: store.bpContext.annual_interest_rate ?? undefined,
+        deferment_months: store.bpContext.deferment_months ?? undefined,
+        working_capital_buffer: store.bpContext.working_capital_buffer ?? undefined,
+        vat_rate: store.bpContext.vat_rate ?? undefined,
         deadline: store.bpContext.deadline ?? undefined,
         market_context: store.bpContext.market_context || undefined,
         competitive_advantage: store.bpContext.competitive_advantage || undefined,
@@ -183,7 +214,7 @@ export function BusinessPlanWizard() {
   }
 
   function next() {
-    goToBlock(Math.min(currentBlock + 1, 7));
+    goToBlock(Math.min(currentBlock + 1, 9));
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
@@ -208,7 +239,7 @@ export function BusinessPlanWizard() {
               {isReview ? "Récapitulatif" : BLOCK_LABELS[currentBlock]}
             </h1>
             <p className="font-sans text-xs text-muted">
-              {isReview ? "Vérifie les données avant de générer" : `Étape ${currentBlock + 1} / 7`}
+              {isReview ? "Vérifie les données avant de générer" : `Étape ${currentBlock + 1} / 9`}
             </p>
           </div>
         </div>
@@ -227,9 +258,11 @@ export function BusinessPlanWizard() {
         {currentBlock === 2 && <TeamStep onNext={next} onBack={back} />}
         {currentBlock === 3 && <FixedCostsStep onNext={next} onBack={back} />}
         {currentBlock === 4 && <VariableCostsStep onNext={next} onBack={back} />}
-        {currentBlock === 5 && <TreasuryStep onNext={next} onBack={back} />}
-        {currentBlock === 6 && <ContextStep onNext={next} onBack={back} />}
-        {currentBlock === 7 && (
+        {currentBlock === 5 && <InvestmentsStep onNext={next} onBack={back} />}
+        {currentBlock === 6 && <TreasuryStep onNext={next} onBack={back} />}
+        {currentBlock === 7 && <FinancingStep onNext={next} onBack={back} />}
+        {currentBlock === 8 && <ContextStep onNext={next} onBack={back} />}
+        {currentBlock === 9 && (
           <ReviewStep onGenerate={handleGenerate} onBack={back} isGenerating={isGenerating} />
         )}
       </div>
@@ -245,3 +278,5 @@ export function BusinessPlanWizard() {
     </div>
   );
 }
+
+

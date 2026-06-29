@@ -129,7 +129,7 @@ export async function getSelectedPages(userId: string): Promise<SelectedNotionPa
 // Snapshot du contexte extrait (résultat de la dernière sync)
 // ============================================================
 
-export async function saveSnapshot(snapshot: NotionContextSnapshot): Promise<void> {
+export async function saveSnapshot(snapshot: NotionContextSnapshot): Promise<string> {
   const supabase = await createClient();
 
   // Insérer le snapshot parent
@@ -167,6 +167,8 @@ export async function saveSnapshot(snapshot: NotionContextSnapshot): Promise<voi
       throw new Error(`saveSnapshot pages: ${pagesError.message}`);
     }
   }
+
+  return snap.id;
 }
 
 export async function getSnapshot(userId: string): Promise<NotionContextSnapshot | null> {
